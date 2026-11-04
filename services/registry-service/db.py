@@ -4,13 +4,14 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-# Relative on purpose for now: the README starts the server from this folder.
-DB_PATH = Path("registry.db")
+# Resolved from this file's folder, so the server works from any working directory.
+DB_PATH = Path(__file__).parent / "registry.db"
 
 
 def get_db() -> Iterator[sqlite3.Connection]:
     # sqlite3.connect() would create a missing file, so check first.
     if not DB_PATH.exists():
+        # 5 seconds is a placeholder. It may change once a real outage shows what fits.
         raise HTTPException(
             status_code=503,
             detail="Database unavailable",

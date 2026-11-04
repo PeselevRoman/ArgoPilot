@@ -74,3 +74,31 @@
 - **Suggested:** Seed a temporary database for each test run and point the app at it.
 - **Decision:** Each test run seeds a temporary database and points the app at it.
 - **Why:** Tests stay isolated from your real data and run the same on every machine.
+
+## Tests use a dedicated catalogue-only database script
+
+- **Question:** Which data should the tests use, and where does it come from?
+- **Suggested:** A separate script in `tests/` that seeds only the catalogue tables with the spec's values, so tests don't depend on `registry.db` or the tasks copy. Labelled as personal judgment.
+- **Decision:** The tests run `tests/seed_test_db.sh` into a temporary folder for each test. It seeds the catalogue tables only.
+- **Why:** The catalogue tests need only catalogue data. Keeping test data separate from `registry.db` keeps tests isolated. Farms and plots are added when their steps need them.
+
+## Lists are sorted by id
+
+- **Question:** The spec doesn't say how list results are ordered. How should they be ordered?
+- **Suggested:** Sort by `id`, so the output is deterministic. Labelled as personal judgment.
+- **Decision:** All list endpoints sort by `id`.
+- **Why:** SQLite doesn't guarantee row order without a sort, and stable output keeps the tests and API clients predictable.
+
+## The course seed script keeps its own table definitions
+
+- **Question:** Should `tasks/seed_registry.sh` load the shared `schema.sql`, so both seed scripts use one schema?
+- **Suggested:** Load the shared file in both scripts, so the table definitions live in one place. Labelled as industry consensus.
+- **Decision:** `tasks/seed_registry.sh` stays unchanged, with its own table definitions. `schema.sql` is used only by `tests/seed_test_db.sh`.
+- **Why:** The course script is provided by the course, so it should not be changed. Trade-off: the two copies of the table definitions can drift apart again.
+
+## Tests fail when the course schema and schema.sql differ
+
+- **Question:** The course seed script and `schema.sql` define the same tables twice. How do we know when they drift apart?
+- **Suggested:** A test that builds a database from each and compares their structure. Labelled as personal judgment.
+- **Decision:** The test fails and names the table that differs.
+- **Why:** The two copies can drift apart without any other test failing. Comparing their structure catches that, and a failing test is harder to miss than a warning.
