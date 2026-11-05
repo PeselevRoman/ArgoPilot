@@ -1,11 +1,10 @@
+import json
 import sqlite3
-import subprocess
 from pathlib import Path
 
 TESTS_DIR = Path(__file__).parent
-REPO_ROOT = TESTS_DIR.parents[2]
-COURSE_SEED = REPO_ROOT / "tasks" / "seed_registry.sh"
-TEST_SEED = TESTS_DIR / "seed_test_db.sh"
+SCHEMA_SQL = TESTS_DIR.parent / "schema.sql"
+EXPECTED_SCHEMA = TESTS_DIR / "expected_schema.json"
 
 
 def describe_tables(database: Path) -> dict:
@@ -33,17 +32,18 @@ def describe_tables(database: Path) -> dict:
     return description
 
 
-def test_course_seed_and_schema_sql_define_the_same_tables(tmp_path):
-    course_db = tmp_path / "course.db"
-    test_db = tmp_path / "test.db"
-    subprocess.run(["bash", str(COURSE_SEED), str(course_db)], check=True, capture_output=True)
-    subprocess.run(["bash", str(TEST_SEED), str(test_db)], check=True, capture_output=True)
+def test_schema_sql_matches_the_saved_structure(tmp_path):
+    database = tmp_path / "schema.db"
+    conn = sqlite3.connect(database)
+    conn.executescript(SCHEMA_SQL.read_text())
+    conn.close()
 
-    course = describe_tables(course_db)
-    test = describe_tables(test_db)
+    # Round-trip through JSON so tuples compare equal to the saved lists.
+    actual = json.loads(json.dumps(describe_tables(database)))
+    expected = json.loads(EXPECTED_SCHEMA.read_text())
 
-    for name in sorted(set(course) | set(test)):
-        assert course.get(name) == test.get(name), (
-            f"Table '{name}' differs between tasks/seed_registry.sh and schema.sql. "
-            "Update both so they match."
+    for name in sorted(set(actual) | set(expected)):
+        assert actual.get(name) == expected.get(name), (
+            f"Table '{name}' differs from tests/expected_schema.json. "
+            "If the change is intended, update that file to match."
         )

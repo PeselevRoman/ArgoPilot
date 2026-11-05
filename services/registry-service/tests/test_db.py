@@ -44,6 +44,30 @@ def test_returns_503_when_dependency_is_overridden_to_fail():
     assert response.headers["retry-after"] == "5"
 
 
+def test_failed_request_discards_its_writes(monkeypatch, tmp_path):
+    # A route that writes and then fails must leave nothing behind.
+    database = tmp_path / "registry.db"
+    setup = sqlite3.connect(database)
+    setup.execute("CREATE TABLE notes (id TEXT PRIMARY KEY)")
+    setup.commit()
+    setup.close()
+    monkeypatch.setattr(db, "DB_PATH", database)
+
+    app = FastAPI()
+
+    @app.post("/write-then-fail")
+    def write_then_fail(conn: db.DbConnection) -> None:
+        conn.execute("INSERT INTO notes (id) VALUES ('a')")
+        raise HTTPException(status_code=409, detail="Nope")
+
+    response = TestClient(app).post("/write-then-fail")
+
+    assert response.status_code == 409
+    check = sqlite3.connect(database)
+    assert check.execute("SELECT COUNT(*) FROM notes").fetchone()[0] == 0
+    check.close()
+
+
 def test_connects_with_foreign_keys_on_when_database_file_exists(monkeypatch, tmp_path):
     database = tmp_path / "registry.db"
     sqlite3.connect(database).close()
