@@ -95,6 +95,7 @@
 - **Suggested:** Load the shared file in both scripts, so the table definitions live in one place. Labelled as industry consensus.
 - **Decision:** `tasks/seed_registry.sh` stays unchanged, with its own table definitions. `schema.sql` is used only by `tests/seed_test_db.sh`.
 - **Why:** The course script is provided by the course, so it should not be changed. Trade-off: the two copies of the table definitions can drift apart again.
+- **Updated:** `schema.sql` is also used by `tests/test_schema.py`, which checks it against a saved copy of the course tables. See "The schema check uses a saved copy of the course tables".
 
 ## Tests fail when the course schema and schema.sql differ
 
@@ -102,6 +103,7 @@
 - **Suggested:** A test that builds a database from each and compares their structure. Labelled as personal judgment.
 - **Decision:** The test fails and names the table that differs.
 - **Why:** The two copies can drift apart without any other test failing. Comparing their structure catches that, and a failing test is harder to miss than a warning.
+- **Updated:** Replaced by "The schema check uses a saved copy of the course tables". The test no longer reads the course script. It compares `schema.sql` with a saved copy in `tests/`. It still fails and names the table that differs.
 
 ## The schema check uses a saved copy of the course tables
 
@@ -144,3 +146,17 @@
 - **Suggested:** Commit after each write, or use one transaction per request. The second is the common pattern in larger services. Labelled as industry consensus.
 - **Decision:** Each request is one transaction. Its changes are saved only if the route finishes without error, and the commit happens before the response is sent.
 - **Why:** Routes with several writes stay safe later, and no route has to remember to commit. Committing before the response means a client that reads right after a write sees the change.
+
+## Retry-After is 5 seconds for now
+
+- **Question:** How long should a client wait before retrying after a `503`?
+- **Suggested:** 5 seconds as a placeholder. Labelled as personal judgment.
+- **Decision:** 5 seconds, subject to change once a real outage shows what fits.
+- **Why:** The spec gives no number, and a local SQLite file has no outage pattern yet to base a number on.
+
+## The database path is resolved from the code's location
+
+- **Question:** Should `registry.db` be found relative to the working folder, or relative to the code?
+- **Suggested:** Resolve it from the folder that holds `db.py`, using `Path(__file__).parent`. Labelled as personal judgment.
+- **Decision:** The path is resolved from the folder that holds `db.py`.
+- **Why:** The server works from any working directory. A relative path would break as soon as the server started from another folder.
