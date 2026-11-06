@@ -139,6 +139,7 @@
 - **Suggested:** Check for plots in the route, and also convert the database's refusal into `409`, in case a plot is added between the check and the delete. Labelled as industry consensus.
 - **Decision:** Delete returns `409 CONFLICT` when the farm has plots, whether the check or the database finds them.
 - **Why:** The check gives a clear answer. The database error covers the rare case of a plot added in between. Without it, that request would fail with an unformatted `500`.
+- **Updated:** The same handling covers plots. If a farm is deleted while a plot is being created or moved onto it, the request returns `422 Unknown farm` instead of a `500`.
 
 ## Each request is one transaction
 
@@ -160,3 +161,39 @@
 - **Suggested:** Resolve it from the folder that holds `db.py`, using `Path(__file__).parent`. Labelled as personal judgment.
 - **Decision:** The path is resolved from the folder that holds `db.py`.
 - **Why:** The server works from any working directory. A relative path would break as soon as the server started from another folder.
+
+## A string that holds a number is converted to a number
+
+- **Question:** Should a number sent as text, such as `"1000"`, be accepted?
+- **Suggested:** Reject it, using strict types, as the safer default. Labelled as personal judgment.
+- **Decision:** A string that holds a number is converted to a number. Non-numeric strings, booleans, and infinity are rejected.
+- **Why:** Clients often send numbers as text, and converting them is more forgiving. Booleans are refused because Python would count them as 1 or 0. Infinity is refused because no plot can have an infinite area or coordinate.
+- **Updated:** Underscores are rejected (`"1_000"`), since Python reads them as separators but clients should not send them. Commas are accepted only as thousands separators in groups of three (`"1,000"`, `"1,234,567.5"`). Other comma forms, such as `"1,5"`, are rejected.
+
+## A PATCH must leave the plot valid
+
+- **Question:** What happens when a PATCH would leave a plot invalid?
+- **Suggested:** Check the whole plot after the change, and reject the request if any rule fails. Labelled as personal judgment.
+- **Decision:** The changed plot must pass every rule before anything is saved. Otherwise the request returns an error and nothing changes.
+- **Why:** A PATCH must not leave a plot half-valid. Checking only the new values could miss a rule that depends on the rest of the plot, such as a farm that no longer exists.
+
+## A planting date may not be in the future
+
+- **Question:** What counts as "in the future" for `planting_date`?
+- **Suggested:** Compare dates only, against the server's date. Labelled as personal judgment.
+- **Decision:** `planting_date` may be today or earlier. A later date returns `422`. The comparison uses the server's local date.
+- **Why:** The spec gives no timezone, and comparing dates only avoids problems with the time of day. Trade-off: a client in another timezone can see a different "today".
+
+## A plot name is unique within its farm
+
+- **Question:** How far does the plot name rule reach?
+- **Suggested:** Unique inside one farm, as the spec says. The same name on another farm is allowed. Labelled as industry consensus.
+- **Decision:** A plot name must be unique within its farm. The same name on another farm is allowed.
+- **Why:** The spec defines the rule this way. A duplicate returns `409 CONFLICT`, whether the route's check or the database finds it.
+
+## Plot names follow the farm name rule
+
+- **Question:** How are plot names trimmed and checked for blanks?
+- **Suggested:** Use the same rule as farm names. Labelled as personal judgment.
+- **Decision:** Leading and trailing spaces are removed. A name that is blank after trimming returns `422`.
+- **Why:** Names follow one rule across the API. Leading and trailing spaces are usually a mistake, and a blank name is invalid.
