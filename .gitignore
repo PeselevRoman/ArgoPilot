@@ -28,3 +28,6 @@ htmlcov/
 .idea/
 .vscode/*
 !.vscode/launch.json
+
+# Presentation drafts are kept local, not in the repository
+docs/presentation/

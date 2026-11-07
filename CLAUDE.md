@@ -9,19 +9,23 @@ Assignment: `tasks/p1_registry_api.md`. Read it fully before doing anything. It 
 Work happens in `services/registry-service`. Its tests go in `services/registry-service/tests/`.
 
 Layout:
-- `tasks/`: the assignment and `seed_registry.sh` (the seed script's source copy)
+- `tasks/`: the assignment, and the course's `seed_registry.sh` (course material, left unchanged)
+- `services/registry-service/`: the service code, its README, `schema.sql` (table definitions for the test database), `seed_registry.sh` (a copy of the course script, used to create `registry.db`), and `tests/`
+- `perf/`: the performance check (k6 script, launcher, dataset script, and `results/`)
 - `docs/judgment-log.md`: the learner's judgment log (renamed from `docs/decisions.md`)
-- `services/registry-service/README.md`: service README (empty for now)
+- `docs/presentation/`: the presentation content
 
 ## Stack (decided)
 
 - Python
 - FastAPI for the HTTP API
-- SQLite (`registry.db`), created by `seed_registry.sh`. Copy the script from `tasks/` into `services/registry-service` and run it there.
+- SQLite (`registry.db`), created by `services/registry-service/seed_registry.sh`. The test database is built from `schema.sql`.
 - pytest for tests (dev dependency)
+- httpx2 for the test client (dev dependency)
 - uv for dependencies
+- k6 for the load test (installed outside `uv`)
 
-Still open: load test tool (deferred to NFR-1.1). All decisions are recorded in `docs/judgment-log.md` and only there. Check it for the latest decisions and do not change them without asking.
+All decisions are recorded in `docs/judgment-log.md` and only there. Check it for the latest decisions and do not change them without asking.
 
 ## Working rules
 
