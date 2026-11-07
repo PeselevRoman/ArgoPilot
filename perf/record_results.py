@@ -24,6 +24,12 @@ ENDPOINTS = [
     ("get_farm", "GET /v1/farms/{id}"),
     ("list_plots", "GET /v1/plots"),
     ("get_plot", "GET /v1/plots/{id}"),
+    ("list_crops", "GET /v1/crops"),
+    ("get_crop", "GET /v1/crops/{id}"),
+    ("list_soils", "GET /v1/soils"),
+    ("get_soil", "GET /v1/soils/{id}"),
+    ("list_emitters", "GET /v1/emitters"),
+    ("get_emitter", "GET /v1/emitters/{id}"),
 ]
 
 
