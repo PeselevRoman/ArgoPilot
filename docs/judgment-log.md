@@ -3,7 +3,7 @@
 ## Unknown farm on plot create returns 422
 
 - **Question:** What should `POST /v1/plots` return when `farm_id` names a farm that doesn't exist: `422 VALIDATION` or `404 NOT_FOUND`?
-- **Suggested:** Claude on the web recommended `422 VALIDATION`, for three reasons:
+- **Suggested:** `422 VALIDATION`, for three reasons:
   - Consistency: all four body references (`farm_id`, `crop_id`, `soil_id`, `emitter_id`) behave the same way, so a client learns one rule.
   - Where the problem is: `POST /v1/plots` is a valid URL, and the body contains an invalid reference. That is the 422 case.
   - Clear client signal: the `detail` field can say "Unknown farm", so the client knows which field to fix.
@@ -13,7 +13,7 @@
 ## Unknown farm on plot list returns an empty list
 
 - **Question:** What should `GET /v1/plots?farm_id=…` return when no farm has that id: `404` or `200 []`?
-- **Suggested:** Claude on the web recommended `200 []`, for two reasons:
+- **Suggested:** `200 []`, for two reasons:
   - The spec already states the rule for lists, so this only adds an exception to it.
   - The typo risk is real, but the client can check the farm with `GET /v1/farms/{id}` if it needs to tell the two cases apart.
 - **Decision:** `200 []`.
@@ -22,7 +22,7 @@
 ## Extra fields in a request body are ignored
 
 - **Question:** Should request bodies with fields outside the spec be rejected or ignored?
-- **Suggested:** No recommendation. The options were offered for the learner to choose.
+- **Suggested:** No recommendation. 
 - **Decision:** Ignored.
 - **Why:** Ignoring unknown fields lets newer clients send fields that this version doesn't know yet, without getting an error. Trade-off: a typo in an optional field name is dropped silently. Rejecting unknown fields would catch those typos, but breaks newer clients.
 
