@@ -5,6 +5,9 @@ before the server starts, so registry.db is never touched.
 
 Usage, from the repository root, with the service's own Python:
     services/registry-service/.venv/bin/python perf/run_server.py perf/perf.db
+
+The server runs in this one process with one worker. The database path is
+set on the db module, so reload or multiple workers would load registry.db instead.
 """
 
 import sys
@@ -19,5 +22,12 @@ import uvicorn  # noqa: E402
 PORT = 8001
 
 if __name__ == "__main__":
-    db.DB_PATH = Path(sys.argv[1]).resolve()
+    if len(sys.argv) != 2:
+        sys.exit("usage: python perf/run_server.py PATH_TO_DATABASE")
+
+    database = Path(sys.argv[1]).resolve()
+    if not database.exists():
+        sys.exit(f"database not found: {database}. Create it with perf/seed_perf_db.py first.")
+
+    db.DB_PATH = database
     uvicorn.run("main:app", host="127.0.0.1", port=PORT, log_level="warning")
