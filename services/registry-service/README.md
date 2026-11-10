@@ -165,7 +165,7 @@ The results of each run are kept in `perf/results/`.
 | `farms.py` | Farm routes |
 | `plots.py` | Plot routes and validation |
 | `catalogues.py` | Crop, soil, and emitter routes |
-| `schema.sql` | Table definitions used by the tests |
+| `schema.sql` | Table definitions, used by the seed script and the tests |
 | `seed_registry.sh` | Creates `registry.db` with the sample data |
 | `tests/` | Test suite |
 

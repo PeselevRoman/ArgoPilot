@@ -26,11 +26,11 @@
 - **Decision:** Ignored.
 - **Why:** Ignoring unknown fields lets newer clients send fields that this version doesn't know yet, without getting an error. Trade-off: a typo in an optional field name is dropped silently. Rejecting unknown fields would catch those typos, but breaks newer clients.
 
-## Wrong method on catalogue routes returns 405 with code VALIDATION
+## Wrong method on any route returns 405 with code VALIDATION
 
 - **Question:** FastAPI's default 405 response is JSON with no `code`, which breaks the rule that every error has one of four codes. Which code should the 405 use?
 - **Suggested:** Three options: add a fifth code (`METHOD_NOT_ALLOWED`), use `VALIDATION`, or return `405` with no code. Leaned toward `VALIDATION`, labelled as personal judgment.
-- **Decision:** Return `405` as `application/problem+json` with `code: VALIDATION`, and keep the `Allow` header.
+- **Decision:** Return `405` as `application/problem+json` with `code: VALIDATION` for any route that doesn't allow the method, and keep the `Allow` header.
 - **Why:** The spec lists only four codes, and FR-1.4 requires one of them. `VALIDATION` is the closest match, since the request is wrong for that route. A fifth code would go against the spec's list.
 
 ## Database outage is tested by overriding the database dependency
@@ -45,7 +45,7 @@
 - **Question:** SQLite creates a missing file on connect, so how is "database unreachable" detected?
 - **Suggested:** Check that `registry.db` exists before connecting, and return `503` if it doesn't.
 - **Decision:** Check that `registry.db` exists before connecting. If it doesn't, return `503 UNAVAILABLE`.
-- **Why:** Without the check, a missing database would be silently created empty, so the `503` would never happen in real use.
+- **Why:** Without the check, SQLite would create an empty database, and every request would then fail with a `500` error, because the tables don't exist. The check makes a missing database return `503` instead.
 
 ## Status title uses the standard reason phrase
 
@@ -59,21 +59,21 @@
 - **Question:** The spec lists no code for `400`. Which code should it use?
 - **Suggested:** `VALIDATION`, since it means the request is invalid. Offered for confirmation with a test case.
 - **Decision:** `VALIDATION`.
-- **Why:** A `400` means the request is invalid, which is what `VALIDATION` describes. This keeps the spec's four codes.
+- **Why:** A `400` means the request is invalid, which is what `VALIDATION` describes. This keeps the spec's four codes. No route returns `400` yet; the mapping is ready for when one does.
 
 ## Catalogues are read from the database
 
 - **Question:** Should the crop, soil, and emitter data come from the database or from constants in code?
 - **Suggested:** From the database, since it's the single source of truth. Labelled as personal judgment.
 - **Decision:** From the database, seeded by `seed_registry.sh`.
-- **Why:** The database is the single source of truth, and the spec treats the seed as the data.
+- **Why:** The database is the single source of truth in this design. The spec's seed defines the catalogue values, and the database holds them.
 
 ## Tests use a temporary seeded database
 
 - **Question:** How do the catalogue tests get data without touching `registry.db`?
 - **Suggested:** Seed a temporary database for each test run and point the app at it.
 - **Decision:** Each test run seeds a temporary database and points the app at it.
-- **Why:** Tests stay isolated from your real data and run the same on every machine.
+- **Why:** Tests stay isolated from your real data. They need `bash` and `sqlite3` installed, so they run the same on any machine that has them.
 
 ## Tests use a dedicated catalogue-only database script
 
@@ -175,7 +175,7 @@
 - **Question:** What happens when a PATCH would leave a plot invalid?
 - **Suggested:** Check the whole plot after the change, and reject the request if any rule fails. Labelled as personal judgment.
 - **Decision:** The changed plot must pass every rule before anything is saved. Otherwise the request returns an error and nothing changes.
-- **Why:** A PATCH must not leave a plot half-valid. Checking only the new values could miss a rule that depends on the rest of the plot, such as a farm that no longer exists.
+- **Why:** A PATCH must not leave a plot half-valid. Checking only the new values could miss a rule that depends on the rest of the plot. For example, moving a plot to another farm can create a duplicate name there, and checking the farm id alone would not catch it.
 
 ## A planting date may not be in the future
 
@@ -218,3 +218,11 @@
 - **Suggested:** Copy the script into the service folder, and leave the course file unchanged. Labelled as personal judgment.
 - **Decision:** `services/registry-service/seed_registry.sh` is a copy of the course script, and the README uses it.
 - **Why:** The product must be runnable without course material, and keeping the course file unchanged respects the course.
+- **Updated:** The service's seed script no longer holds its own table definitions. See "The service's seed script loads the shared schema".
+
+## The service's seed script loads the shared schema
+
+- **Question:** The service's seed script copies the table definitions, so there are two copies to keep in step. How should the seed get its tables?
+- **Suggested:** Load `schema.sql` in the seed script, so the product has one table definition. The course file stays unchanged. Labelled as industry consensus.
+- **Decision:** `services/registry-service/seed_registry.sh` loads `schema.sql` and inserts the sample data. It no longer holds its own table definitions.
+- **Why:** A change to the table definitions is made in one place, and the seed and the tests both use it. The course file still stays unchanged.

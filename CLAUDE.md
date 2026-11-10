@@ -10,7 +10,7 @@ Work happens in `services/registry-service`. Its tests go in `services/registry-
 
 Layout:
 - `tasks/`: the assignment, and the course's `seed_registry.sh` (course material, left unchanged)
-- `services/registry-service/`: the service code, its README, `schema.sql` (table definitions for the test database), `seed_registry.sh` (a copy of the course script, used to create `registry.db`), and `tests/`
+- `services/registry-service/`: the service code, its README, `schema.sql` (the table definitions, used by the seed script and the test database), `seed_registry.sh` (creates `registry.db` from `schema.sql`, with the sample data), and `tests/`
 - `perf/`: the performance check (k6 script, launcher, dataset script, and `results/`)
 - `docs/judgment-log.md`: the learner's judgment log (renamed from `docs/decisions.md`)
 - `docs/presentation/`: the presentation content
