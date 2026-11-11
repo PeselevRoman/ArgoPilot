@@ -31,3 +31,7 @@ htmlcov/
 
 # Presentation drafts are kept local, not in the repository
 docs/presentation/
+
+# Isolated worktrees and subagent scratch space
+.claude/worktrees/
+.superpowers/
