@@ -161,6 +161,7 @@
 - **Suggested:** Resolve it from the folder that holds `db.py`, using `Path(__file__).parent`. Labelled as personal judgment.
 - **Decision:** The path is resolved from the folder that holds `db.py`.
 - **Why:** The server works from any working directory. A relative path would break as soon as the server started from another folder.
+- **Updated:** A relative SQLite path in `DATABASE_URL`, such as `sqlite:///registry.db`, is resolved from the same folder, and the `.env` file is read from it.
 
 ## A string that holds a number is converted to a number
 
@@ -288,3 +289,17 @@ Decisions about running the service on PostgreSQL in production. `DATABASE_URL` 
 - **Suggested:** Use byte-order collation (`COLLATE "C"`) on the catalogue `id` columns in `schema.postgres.sql`. Labelled as personal judgment.
 - **Decision:** The catalogue `id` columns use `COLLATE "C"` in the Postgres schema.
 - **Why:** Today's ids sort the same either way, but a future id with punctuation could sort differently. Trade-off: one more detail in the Postgres schema to keep in mind.
+
+## A failed write rolls back before the re-check
+
+- **Question:** On PostgreSQL a failed statement aborts the whole transaction, so the re-check queries that follow an `IntegrityError` would fail with a `500`. How do the `409` and `422` answers survive?
+- **Suggested:** Roll back the transaction, then run the re-check. The alternative was a savepoint around the write, which keeps earlier work in the request but has known trouble with SQLite's driver. Labelled as personal judgment.
+- **Decision:** In `create_plot`, `update_plot` and `delete_farm`, the `IntegrityError` handler calls `conn.rollback()` before the re-check.
+- **Why:** The failing write is the only write in each of those requests, so the rollback loses nothing, and it behaves the same on both engines. Trade-off: a future route that writes several things before the one that fails would lose that work, and would need a savepoint instead.
+
+## Ids use a custom column type, not SQLAlchemy's Uuid
+
+- **Question:** SQLAlchemy's built-in `Uuid` stores ids on SQLite as 32 hex characters without hyphens. The existing `registry.db` rows have hyphenated ids. Which column type should the id columns use?
+- **Suggested:** A small custom type that stores hyphenated text on SQLite and uses the native `uuid` on Postgres. Alternatives: migrate the SQLite data to the hex form, or keep ids as plain strings. Labelled as personal judgment.
+- **Decision:** `UuidId` in `tables.py`: a hyphenated lowercase text column on SQLite, a native `uuid` on Postgres, and a Python `UUID` in both.
+- **Why:** Existing databases and `schema.sql` keep working with no data change, and both engines give the code the same Python type. Trade-off: one custom type to maintain.
