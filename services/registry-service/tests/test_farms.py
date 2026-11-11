@@ -1,5 +1,5 @@
-import sqlite3
 import uuid
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -41,10 +41,10 @@ def test_create_trims_surrounding_spaces_from_the_name(test_db):
 def test_create_is_saved_before_the_response_returns(test_db):
     farm = create("Demo cooperative")
 
-    conn = sqlite3.connect(test_db)
-    row = conn.execute("SELECT name FROM farms WHERE id = ?", (farm["id"],)).fetchone()
-    conn.close()
-    assert row == ("Demo cooperative",)
+    rows = test_db.fetch_all(
+        "SELECT name FROM farms WHERE id = :id", id=uuid.UUID(farm["id"])
+    )
+    assert rows == [("Demo cooperative",)]
 
 
 @pytest.mark.parametrize("body", [{"name": ""}, {"name": "   "}, {}])
@@ -150,17 +150,15 @@ def test_delete_returns_409_when_a_plot_is_added_after_the_check(test_db, monkey
     farm = create("Demo cooperative")
     # Pretend the check ran before the plot existed, so only the database refuses the delete.
     monkeypatch.setattr("farms.farm_has_plots", lambda conn, farm_id: False)
-    conn = sqlite3.connect(test_db)
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute(
+    test_db.execute(
         "INSERT INTO plots (id, farm_id, name, area_m2, crop_id, planting_date, soil_id, "
         "row_spacing_m, emitter_spacing_m, emitter_id, lat, lon) VALUES "
-        "(?, ?, 'North block', 1000, 'tomato', '2026-03-01', 'loam', 1.5, 0.4, "
+        "(:id, :farm_id, 'North block', 1000, 'tomato', :planting_date, 'loam', 1.5, 0.4, "
         "'dripnet-pc-1.0', 31.25, 34.79)",
-        (str(uuid.uuid4()), farm["id"]),
+        id=uuid.uuid4(),
+        farm_id=uuid.UUID(farm["id"]),
+        planting_date=date(2026, 3, 1),
     )
-    conn.commit()
-    conn.close()
 
     response = client.delete(f"/v1/farms/{farm['id']}")
 
@@ -172,17 +170,15 @@ def test_delete_returns_409_when_a_plot_is_added_after_the_check(test_db, monkey
 def test_delete_farm_with_plots_returns_409_conflict(test_db):
     farm = create("Demo cooperative")
     # Plots are not built yet, so insert one row directly to test the rule.
-    conn = sqlite3.connect(test_db)
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute(
+    test_db.execute(
         "INSERT INTO plots (id, farm_id, name, area_m2, crop_id, planting_date, soil_id, "
         "row_spacing_m, emitter_spacing_m, emitter_id, lat, lon) VALUES "
-        "(?, ?, 'North block', 1000, 'tomato', '2026-03-01', 'loam', 1.5, 0.4, "
+        "(:id, :farm_id, 'North block', 1000, 'tomato', :planting_date, 'loam', 1.5, 0.4, "
         "'dripnet-pc-1.0', 31.25, 34.79)",
-        (str(uuid.uuid4()), farm["id"]),
+        id=uuid.uuid4(),
+        farm_id=uuid.UUID(farm["id"]),
+        planting_date=date(2026, 3, 1),
     )
-    conn.commit()
-    conn.close()
 
     response = client.delete(f"/v1/farms/{farm['id']}")
 
