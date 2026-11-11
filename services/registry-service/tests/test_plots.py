@@ -438,3 +438,28 @@ def test_existing_hyphenated_plot_row_is_patchable(test_db):
     assert response.json()["id"] == plot_id
     assert response.json()["farm_id"] == farm_id
     assert response.json()["name"] == "Renamed"
+
+
+def test_patch_race_on_name_returns_409(test_db, monkeypatch):
+    farm_id = new_farm()
+    create_plot(farm_id, name="North block")
+    south = create_plot(farm_id, name="South block")
+    # The first check misses plot A; the database refuses the update; the re-check finds A.
+    real_name_taken = plots.name_taken
+    calls = []
+
+    def first_check_misses(conn, farm, name, ignore_id=None):
+        calls.append(name)
+        return False if len(calls) == 1 else real_name_taken(conn, farm, name, ignore_id)
+
+    monkeypatch.setattr(plots, "name_taken", first_check_misses)
+
+    response = client.patch(f"/v1/plots/{south['id']}", json={"name": "North block"})
+
+    assert response.status_code == 409
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "CONFLICT"
+    assert len(calls) == 2
+    # The rollback left the connection usable, and the plot kept its old name.
+    assert client.get(f"/v1/plots/{south['id']}").json()["name"] == "South block"
+    assert test_db.fetch_all("SELECT count(*) FROM plots") == [(2,)]
