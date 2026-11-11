@@ -1,9 +1,9 @@
+import datetime
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 
-import db
 import plots
 from main import app
 
@@ -347,7 +347,7 @@ def test_farm_with_a_plot_cannot_be_deleted(test_db):
     ],
 )
 def test_database_unavailable_returns_503(monkeypatch, tmp_path, method, path):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "missing.db")
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
     body = {"json": {"area_m2": 1200}} if method in ("post", "patch") else {}
 
     response = getattr(client, method)(path, **body)
@@ -355,3 +355,86 @@ def test_database_unavailable_returns_503(monkeypatch, tmp_path, method, path):
     assert response.status_code == 503
     assert response.headers["content-type"] == PROBLEM_JSON
     assert response.json()["code"] == "UNAVAILABLE"
+
+
+@pytest.mark.parametrize("method", ["get", "patch", "delete"])
+def test_malformed_path_id_returns_404(test_db, method):
+    body = {"json": {"area_m2": 1200}} if method == "patch" else {}
+
+    response = getattr(client, method)("/v1/plots/garbage", **body)
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "NOT_FOUND"
+
+
+def test_create_with_a_malformed_farm_id_returns_422_unknown_farm(test_db):
+    response = client.post("/v1/plots", json=plot_body("garbage"))
+
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "VALIDATION"
+    assert response.json()["detail"] == "Unknown farm"
+
+
+def test_list_with_a_malformed_farm_id_returns_200_and_empty_list(test_db):
+    create_plot(new_farm())
+
+    response = client.get("/v1/plots", params={"farm_id": "garbage"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_filter_accepts_an_uppercase_farm_id(test_db):
+    farm_id = new_farm()
+    mine = create_plot(farm_id)
+
+    response = client.get("/v1/plots", params={"farm_id": farm_id.upper()})
+
+    assert response.status_code == 200
+    assert response.json() == [mine]
+
+
+def test_create_first_plot_on_a_farm_works_without_an_ignore_id(test_db):
+    # name_taken must not compare the id column with a missing ignore id.
+    plot = create_plot(new_farm(), name="First block")
+
+    assert plot["name"] == "First block"
+
+
+def test_patch_moving_a_plot_to_a_farm_with_the_same_name_returns_409(test_db):
+    create_plot(new_farm("Demo cooperative"), name="North block")
+    other_farm_id = new_farm("East farm")
+    mine = create_plot(other_farm_id, name="North block")
+    target = new_farm("West farm")
+    create_plot(target, name="North block")
+
+    response = client.patch(f"/v1/plots/{mine['id']}", json={"farm_id": target})
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "CONFLICT"
+
+
+def test_existing_hyphenated_plot_row_is_patchable(test_db):
+    farm_id = "b7e2c0a0-3c1d-4f0a-9a11-0c5d2e6f1001"
+    plot_id = "c8f3d1b1-4d2e-4a1b-8b22-1d6e3f7a2002"
+    test_db.execute(
+        "INSERT INTO farms (id, name) VALUES (:id, 'Seed farm')", id=uuid.UUID(farm_id)
+    )
+    test_db.execute(
+        "INSERT INTO plots (id, farm_id, name, area_m2, crop_id, planting_date, soil_id, "
+        "row_spacing_m, emitter_spacing_m, emitter_id, lat, lon) VALUES "
+        "(:id, :farm_id, 'Seed plot', 1000, 'tomato', :planting_date, 'loam', 1.5, 0.4, "
+        "'dripnet-pc-1.0', 31.25, 34.79)",
+        id=uuid.UUID(plot_id),
+        farm_id=uuid.UUID(farm_id),
+        planting_date=datetime.date(2026, 3, 1),
+    )
+
+    response = client.patch(f"/v1/plots/{plot_id}", json={"name": "Renamed"})
+
+    assert response.status_code == 200
+    assert response.json()["id"] == plot_id
+    assert response.json()["farm_id"] == farm_id
+    assert response.json()["name"] == "Renamed"
