@@ -303,3 +303,10 @@ Decisions about running the service on PostgreSQL in production. `DATABASE_URL` 
 - **Suggested:** A small custom type that stores hyphenated text on SQLite and uses the native `uuid` on Postgres. Alternatives: migrate the SQLite data to the hex form, or keep ids as plain strings. Labelled as personal judgment.
 - **Decision:** `UuidId` in `tables.py`: a hyphenated lowercase text column on SQLite, a native `uuid` on Postgres, and a Python `UUID` in both.
 - **Why:** Existing databases and `schema.sql` keep working with no data change, and both engines give the code the same Python type. Trade-off: one custom type to maintain.
+
+## Connection tests use an unreachable Postgres port
+
+- **Question:** How is the `503` for an unreachable Postgres tested, when the override method used for the older `503` test cannot check the Postgres connection path?
+- **Suggested:** Point the new connection dependency at a closed port, `postgresql://u:p@127.0.0.1:1/test`. Labelled as personal judgment.
+- **Decision:** The new dependency's `503` test uses a real unreachable Postgres URL. The override decision above still covers the route-level test.
+- **Why:** Only a real connection attempt exercises the Postgres connection error that the `503` depends on. Trade-off: the test depends on nothing listening on local port 1, and it is slower than an override.

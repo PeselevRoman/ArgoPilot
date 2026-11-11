@@ -15,3 +15,11 @@ def test_db(monkeypatch, tmp_path):
     subprocess.run(["bash", str(SEED_SCRIPT), str(database)], check=True)
     monkeypatch.setattr(db, "DB_PATH", database)
     return database
+
+
+@pytest.fixture(autouse=True)
+def clean_database_settings(monkeypatch):
+    # A developer's real .env or shell variable must never leak into a test.
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    yield
+    db.reset_engines()
