@@ -1,11 +1,15 @@
-import sqlite3
 import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, StringConstraints, model_validator
 
-from db import DbConnection
+from sqlalchemy import Connection, delete, exists, insert, select, update
+from sqlalchemy.exc import IntegrityError
+
+from db import Conn
+from ids import parse_uuid
+from tables import farms, plots
 
 router = APIRouter(prefix="/v1")
 
@@ -35,53 +39,63 @@ class FarmUpdate(BaseModel):
         return self
 
 
-def get_farm_or_404(conn: sqlite3.Connection, farm_id: str) -> Farm:
-    row = conn.execute("SELECT id, name FROM farms WHERE id = ?", (farm_id,)).fetchone()
+def get_farm_or_404(conn: Connection, farm_id: str) -> Farm:
+    # A malformed id cannot match any row, so it gets the same 404 as an unknown id.
+    parsed = parse_uuid(farm_id)
+    row = None
+    if parsed is not None:
+        stmt = select(farms.c.id, farms.c.name).where(farms.c.id == parsed)
+        row = conn.execute(stmt).mappings().first()
     if row is None:
         raise HTTPException(status_code=404, detail="Farm not found")
-    return Farm.model_validate(dict(row))
+    return Farm(id=str(row["id"]), name=row["name"])
 
 
-def farm_has_plots(conn: sqlite3.Connection, farm_id: str) -> bool:
-    row = conn.execute("SELECT 1 FROM plots WHERE farm_id = ? LIMIT 1", (farm_id,)).fetchone()
-    return row is not None
+def farm_has_plots(conn: Connection, farm_id: uuid.UUID) -> bool:
+    return bool(conn.scalar(select(exists().where(plots.c.farm_id == farm_id))))
 
 
 @router.post("/farms", status_code=201)
-def create_farm(body: FarmCreate, conn: DbConnection) -> Farm:
-    farm = Farm(id=str(uuid.uuid4()), name=body.name)
-    conn.execute("INSERT INTO farms (id, name) VALUES (?, ?)", (farm.id, farm.name))
-    return farm
+def create_farm(body: FarmCreate, conn: Conn) -> Farm:
+    new_id = uuid.uuid4()
+    conn.execute(insert(farms).values(id=new_id, name=body.name))
+    return Farm(id=str(new_id), name=body.name)
 
 
 @router.get("/farms")
-def list_farms(conn: DbConnection) -> list[Farm]:
-    rows = conn.execute("SELECT id, name FROM farms ORDER BY id").fetchall()
-    return [Farm.model_validate(dict(row)) for row in rows]
+def list_farms(conn: Conn) -> list[Farm]:
+    stmt = select(farms.c.id, farms.c.name).order_by(farms.c.id)
+    return [
+        Farm(id=str(row["id"]), name=row["name"]) for row in conn.execute(stmt).mappings()
+    ]
 
 
 @router.get("/farms/{farm_id}")
-def get_farm(farm_id: str, conn: DbConnection) -> Farm:
+def get_farm(farm_id: str, conn: Conn) -> Farm:
     return get_farm_or_404(conn, farm_id)
 
 
 @router.patch("/farms/{farm_id}")
-def update_farm(farm_id: str, body: FarmUpdate, conn: DbConnection) -> Farm:
+def update_farm(farm_id: str, body: FarmUpdate, conn: Conn) -> Farm:
     farm = get_farm_or_404(conn, farm_id)
     if "name" in body.model_fields_set:
-        conn.execute("UPDATE farms SET name = ? WHERE id = ?", (body.name, farm_id))
-        farm = Farm(id=farm_id, name=body.name)
+        conn.execute(update(farms).where(farms.c.id == uuid.UUID(farm.id)).values(name=body.name))
+        farm = Farm(id=farm.id, name=body.name)
     return farm
 
 
 @router.delete("/farms/{farm_id}", status_code=204)
-def delete_farm(farm_id: str, conn: DbConnection) -> Response:
-    get_farm_or_404(conn, farm_id)
-    if farm_has_plots(conn, farm_id):
+def delete_farm(farm_id: str, conn: Conn) -> Response:
+    farm = get_farm_or_404(conn, farm_id)
+    parsed = uuid.UUID(farm.id)
+    if farm_has_plots(conn, parsed):
         raise HTTPException(status_code=409, detail="Farm still has plots")
     try:
-        conn.execute("DELETE FROM farms WHERE id = ?", (farm_id,))
-    except sqlite3.IntegrityError:
+        conn.execute(delete(farms).where(farms.c.id == parsed))
+    except IntegrityError:
         # A plot was added after the check above, and the database refused the delete.
+        # PostgreSQL aborts the whole transaction after a failed statement, so roll back
+        # before raising. The delete is the only write, so nothing is lost.
+        conn.rollback()
         raise HTTPException(status_code=409, detail="Farm still has plots")
     return Response(status_code=204)

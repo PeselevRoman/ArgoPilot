@@ -4,7 +4,6 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
-import db
 from main import app
 
 PROBLEM_JSON = "application/problem+json"
@@ -199,7 +198,7 @@ def test_delete_farm_with_plots_returns_409_conflict(test_db):
     ],
 )
 def test_database_unavailable_returns_503(monkeypatch, tmp_path, method, path):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "missing.db")
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
 
     body = {"json": {"name": "Demo"}} if method in ("post", "patch") else {}
     response = getattr(client, method)(path, **body)
@@ -207,3 +206,46 @@ def test_database_unavailable_returns_503(monkeypatch, tmp_path, method, path):
     assert response.status_code == 503
     assert response.headers["content-type"] == PROBLEM_JSON
     assert response.json()["code"] == "UNAVAILABLE"
+
+
+@pytest.mark.parametrize("method", ["get", "patch", "delete"])
+def test_get_with_a_malformed_id_returns_404_not_found(test_db, method):
+    body = {"json": {"name": "Demo"}} if method == "patch" else {}
+
+    response = getattr(client, method)("/v1/farms/not-a-uuid", **body)
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "NOT_FOUND"
+
+
+def test_get_accepts_an_uppercase_uuid(test_db):
+    farm = create("Demo cooperative")
+
+    response = client.get(f"/v1/farms/{farm['id'].upper()}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == farm["id"]
+
+
+def test_get_accepts_a_uuid_without_hyphens(test_db):
+    farm = create("Demo cooperative")
+
+    response = client.get(f"/v1/farms/{farm['id'].replace('-', '')}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == farm["id"]
+
+
+def test_existing_hyphenated_row_is_readable_and_deletable(test_db):
+    farm_id = "b7e2c0a0-3c1d-4f0a-9a11-0c5d2e6f1001"
+    test_db.execute(
+        "INSERT INTO farms (id, name) VALUES (:id, 'Seed farm')", id=uuid.UUID(farm_id)
+    )
+
+    got = client.get(f"/v1/farms/{farm_id}")
+    deleted = client.delete(f"/v1/farms/{farm_id}")
+
+    assert got.status_code == 200
+    assert got.json() == {"id": farm_id, "name": "Seed farm"}
+    assert deleted.status_code == 204
