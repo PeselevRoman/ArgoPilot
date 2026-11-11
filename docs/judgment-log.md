@@ -226,3 +226,65 @@
 - **Suggested:** Load `schema.sql` in the seed script, so the product has one table definition. The course file stays unchanged. Labelled as industry consensus.
 - **Decision:** `services/registry-service/seed_registry.sh` loads `schema.sql` and inserts the sample data. It no longer holds its own table definitions.
 - **Why:** A change to the table definitions is made in one place, and the seed and the tests both use it. The course file still stays unchanged.
+
+---
+
+# PostgreSQL support
+
+Decisions about running the service on PostgreSQL in production. `DATABASE_URL` selects the engine: SQLite (`registry.db`) locally and in tests, PostgreSQL in production. The existing endpoints must behave exactly the same on both.
+
+## Postgres uses native column types
+
+- **Question:** The production PostgreSQL tables must match the local SQLite schema. Should they keep the SQLite types, or use Postgres's native types?
+- **Suggested:** Keep the SQLite types (`text`, with `double precision` for `REAL`), so both engines share one code path and return the same values. Labelled as personal judgment.
+- **Decision:** Native types: `uuid` for farm and plot ids (and `plots.farm_id`), `date` for `planting_date`, `double precision` for the floats. Catalogue ids stay `text`, since they are slugs, not UUIDs.
+- **Why:** The database should reject bad dates and malformed ids itself, not rely only on the API's validation. Trade-off: the two engines return different Python types, so the code needs a conversion layer to keep the API output identical, and tests on SQLite say less about Postgres.
+
+## SQLAlchemy Core talks to both databases
+
+- **Question:** Every route uses `sqlite3` directly with `?` placeholders. How should the code work with both SQLite and PostgreSQL?
+- **Suggested:** SQLAlchemy Core, so queries are written once and the engine comes from `DATABASE_URL`. Alternatives: raw SQL with a hand-written adapter per driver, or the full SQLAlchemy ORM. Labelled as industry consensus.
+- **Decision:** SQLAlchemy Core.
+- **Why:** It converts `UUID` and `date` values for each engine and keeps one version of each query, so the endpoints can behave the same on both. Trade-off: one new dependency, and the routes' SQL has to be rewritten.
+
+## DATABASE_URL has no default
+
+- **Question:** What should the app do when `DATABASE_URL` is not set?
+- **Suggested:** Fail at startup with no default, so a production deploy that forgets the variable stops at once. The alternative was to default to `sqlite:///registry.db`, which makes local runs easier but could silently start production on a local file. Labelled as personal judgment.
+- **Decision:** No default. The app refuses to start without `DATABASE_URL`. A committed `.env.example` shows the format, and the real `.env` stays out of git.
+- **Why:** A missing production setting should stop the deploy, not fall back quietly. Trade-off: local runs need a `.env` file first.
+
+## Tests run on SQLite, plus on PostgreSQL when one is available
+
+- **Question:** The two engines return different Python types, so tests on SQLite alone don't prove the Postgres path works. How should tests treat PostgreSQL?
+- **Suggested:** Run the API tests on SQLite by default, and also on a real Postgres when `TEST_DATABASE_URL` is set. Alternatives: SQLite only, or Postgres for every run. Labelled as industry consensus.
+- **Decision:** SQLite by default. The Postgres tests run only when `TEST_DATABASE_URL` is set, and are skipped otherwise. No Docker or CI exists yet, so a local Postgres install (WSL) is the way to run them for now.
+- **Why:** The real engine is the only way to check that behavior is identical on both, and skipping keeps the normal run fast and free of setup. Trade-off: until a Postgres is set up, the Postgres path is untested, and a skipped test can hide that.
+
+## A database connection failure returns 503
+
+- **Question:** Today "database unreachable" means the SQLite file is missing. How is it detected on PostgreSQL?
+- **Suggested:** Keep the SQLite file check, and on Postgres catch the connection error and return the same `503`. A startup connection check was the alternative, but a short outage at startup would then stop the app from starting. Labelled as industry consensus.
+- **Decision:** A failure to connect to the database returns `503 UNAVAILABLE` with `Retry-After: 5`, on both engines, and the underlying error is logged. Other database errors are not converted. The app does no connection check at startup.
+- **Why:** A `503` with `Retry-After` is the signal for a temporary outage, and the response stays identical to today's. Trade-offs: (1) a wrong password or database name in `DATABASE_URL` never fixes itself, but clients get a `503` telling them to retry, so the log is the only place the cause shows. (2) If the tables were never created, the first request fails with an unformatted `500`, because the connection itself works.
+
+## PostgreSQL gets its own schema file
+
+- **Question:** The service never creates tables in production, but the Postgres tables must exist before release and for the Postgres tests. Where is their definition kept?
+- **Suggested:** A second file, `schema.postgres.sql`, next to `schema.sql`, with a test that compares the two files' tables and columns. The alternative was to generate the DDL for both engines from SQLAlchemy table definitions. Labelled as personal judgment.
+- **Decision:** `services/registry-service/schema.postgres.sql` holds the Postgres table definitions with the native types. It is run once before release and loaded by the Postgres tests. The service never runs it.
+- **Why:** The native types make the two engines' definitions differ, and a plain SQL file is easy to read and review before running on production. Trade-off: the two files can drift apart, so a test must compare their tables and columns.
+
+## Malformed ids behave as before; UUID text is accepted in any form
+
+- **Question:** With `uuid` columns, a malformed id in a path, body or query would make the database raise an error. What should the API return?
+- **Suggested:** Parse the id first. A malformed id behaves as an id that matches nothing, so responses stay as they are today. Labelled as personal judgment.
+- **Decision:** A malformed path id returns `404`, a malformed body `farm_id` returns `422 Unknown farm`, and `?farm_id=` with a malformed value returns `200 []`. UUID text in uppercase or without hyphens is valid and finds the row.
+- **Why:** The responses stay identical to today's for every malformed id. Trade-off: this is the one place behavior differs from before, because uppercase or hyphenless UUIDs used to return `404` and now find the row.
+
+## Catalogue ids sort by byte order on PostgreSQL
+
+- **Question:** Lists sort by `id`. SQLite sorts text by bytes, and Postgres by the database's locale rules. How do the lists stay in the same order?
+- **Suggested:** Use byte-order collation (`COLLATE "C"`) on the catalogue `id` columns in `schema.postgres.sql`. Labelled as personal judgment.
+- **Decision:** The catalogue `id` columns use `COLLATE "C"` in the Postgres schema.
+- **Why:** Today's ids sort the same either way, but a future id with punctuation could sort differently. Trade-off: one more detail in the Postgres schema to keep in mind.
