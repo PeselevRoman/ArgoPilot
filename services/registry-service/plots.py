@@ -190,7 +190,7 @@ def create_plot(body: PlotCreate, conn: Conn) -> Plot:
             raise HTTPException(status_code=409, detail="Plot name already used on this farm")
         check_references(conn, body)
         raise
-    return Plot(**{**body.model_dump(), "id": str(new_id)})
+    return Plot(**{**body.model_dump(), "id": str(new_id), "farm_id": str(farm_id)})
 
 
 @router.get("/plots")
@@ -239,7 +239,7 @@ def update_plot(plot_id: str, body: PlotUpdate, conn: Conn) -> Plot:
             raise HTTPException(status_code=409, detail="Plot name already used on this farm")
         check_references(conn, updated)
         raise
-    return Plot(**{**updated.model_dump(), "id": current.id})
+    return Plot(**{**updated.model_dump(), "id": current.id, "farm_id": str(farm_id)})
 
 
 @router.delete("/plots/{plot_id}", status_code=204)

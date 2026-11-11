@@ -58,6 +58,16 @@ def test_create_returns_201_with_exactly_the_spec_fields(test_db):
     assert client.get(f"/v1/plots/{plot['id']}").json() == plot
 
 
+def test_create_returns_the_lowercase_farm_id_when_the_body_is_uppercase(test_db):
+    farm_id = new_farm()
+
+    response = client.post("/v1/plots", json=plot_body(farm_id.upper()))
+
+    assert response.status_code == 201
+    assert response.json()["farm_id"] == farm_id
+    assert client.get(f"/v1/plots/{response.json()['id']}").json()["farm_id"] == farm_id
+
+
 def test_create_ignores_extra_fields(test_db):
     farm_id = new_farm()
 
@@ -243,6 +253,16 @@ def test_patch_changes_only_the_sent_fields(test_db):
 
     assert response.status_code == 200
     assert response.json() == {**plot, "area_m2": 1200}
+
+
+def test_patch_returns_the_lowercase_farm_id_when_the_body_is_hyphenless(test_db):
+    farm_id = new_farm()
+    plot = create_plot(farm_id)
+
+    response = client.patch(f"/v1/plots/{plot['id']}", json={"farm_id": farm_id.replace("-", "")})
+
+    assert response.status_code == 200
+    assert response.json()["farm_id"] == farm_id
 
 
 def test_patch_with_empty_body_changes_nothing(test_db):
