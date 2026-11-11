@@ -34,8 +34,8 @@ Anyone implementing this design reads the whole "PostgreSQL support" section of 
 
 ## Components
 
-- `db.py` (rewritten): loads `.env`, reads `DATABASE_URL` (startup error if missing), builds one SQLAlchemy engine. `get_db` and `DbConnection` keep their names. One transaction per request, committed before the response is sent, rolled back on error. SQLite: file-exists check and foreign keys switched on. Connection failures become `503` with `Retry-After: 5` and the underlying error is logged.
-- `tables.py` (new): the five tables as SQLAlchemy `Table` objects with `Uuid`, `Date` and `Float` types. The service never calls `create_all`.
+- `db.py` (rewritten): loads `.env`, reads `DATABASE_URL` (startup error if missing), builds one SQLAlchemy engine. The connection dependency is `db.get_connection` and the annotated type is `db.Conn`; `get_db`, `DB_PATH` and `DbConnection` are removed. One transaction per request, committed before the response is sent, rolled back on error. SQLite: file-exists check and foreign keys switched on. Connection failures become `503` with `Retry-After: 5` and the underlying error is logged.
+- `tables.py` (new): the five tables as SQLAlchemy `Table` objects with a custom `UuidId`, `Date` and `Float` types. The service never calls `create_all`.
 - `farms.py`, `plots.py`, `catalogues.py`: raw SQL becomes query-builder calls. Pydantic models, validation and messages are unchanged. `IntegrityError` from SQLAlchemy replaces `sqlite3.IntegrityError`. Ids are returned to clients as strings.
 - A small id helper parses a string as a UUID and returns nothing when it is malformed.
 - `schema.postgres.sql` (new): native types, `uuid` for farm and plot ids and `plots.farm_id`, `date`, `double precision`; catalogue ids stay `text`.
@@ -67,6 +67,14 @@ Lists sort by `id`. SQLite sorts text by bytes, Postgres by locale, so catalogue
 - Performance checks stay outside the test suite.
 
 Until a Postgres is available, the Postgres path is only partly verified (the 503 and schema parity tests). Reports must say so.
+
+## Amendments found while planning
+
+1. SQLAlchemy's built-in `Uuid` stores 32-character hex without hyphens on SQLite. Existing `registry.db` rows have hyphenated ids, so lookups would fail. A custom `UuidId` type is used instead.
+2. On PostgreSQL a failed statement aborts the whole transaction, so the recheck after `IntegrityError` in `create_plot`, `update_plot` and `delete_farm` would fail. The code calls `conn.rollback()` before the recheck. This is safe because the failing write is the only write in the request.
+3. More tests change than just the `test_db` fixture: tests that touch `sqlite3` directly or patch `db.DB_PATH` are edited.
+4. `perf/run_server.py` sets `db.DB_PATH`, so it changes too. A relative SQLite path in `DATABASE_URL` resolves against the service folder (the existing "database path is resolved from the code's location" decision), and `.env` is read from that folder.
+5. The statement that `get_db` and `DbConnection` keep their names is superseded. The old names (`get_db`, `DB_PATH`, `DbConnection`) are removed, and the connection dependency is `db.get_connection` with the annotated type `db.Conn`.
 
 ## Open items
 

@@ -24,7 +24,7 @@ def make_test_app() -> FastAPI:
         return item
 
     @app.get("/database")
-    def read_database(conn=Depends(db.get_db)) -> dict[str, str]:
+    def read_database(conn=Depends(db.get_connection)) -> dict[str, str]:
         return {"status": "ok"}
 
     @app.get("/raise/{status}")
@@ -71,7 +71,7 @@ def test_bad_body_returns_422_with_validation_code_and_field_in_detail():
 
 
 def test_database_unavailable_returns_503_with_retry_after_and_unavailable_code(monkeypatch, tmp_path):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "missing.db")
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
 
     response = client.get("/database")
 

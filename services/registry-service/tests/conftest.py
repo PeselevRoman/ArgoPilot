@@ -61,8 +61,6 @@ def test_db(request, monkeypatch, tmp_path):
         database = tmp_path / "test.db"
         subprocess.run(["bash", str(SEED_SCRIPT), str(database)], check=True)
         url = f"sqlite:///{database}"
-        # Transitional: unmigrated routes still read db.DB_PATH. Task 7 removes this line.
-        monkeypatch.setattr(db, "DB_PATH", database)
         monkeypatch.setenv("DATABASE_URL", url)
         return TestDatabase(url, db.get_engine())
 

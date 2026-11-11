@@ -1,12 +1,13 @@
 # Registry service
 
-A web API for managing farms, plots, and the crop, soil, and emitter catalogues used by plots. It is built with FastAPI and stores its data in one SQLite file, `registry.db`.
+A web API for managing farms, plots, and the crop, soil, and emitter catalogues used by plots. It is built with FastAPI and runs on SQLite (one file, `registry.db`) or PostgreSQL. `DATABASE_URL` chooses which.
 
 ## Requirements
 
 - Python 3.12 or newer
 - [uv](https://docs.astral.sh/uv/) for dependencies
 - The `sqlite3` command-line tool, used by the seed script and the test database script
+- Optional: a PostgreSQL server, to run on PostgreSQL
 
 ## Setup
 
@@ -15,10 +16,22 @@ From this folder:
 ```bash
 uv sync                       # install dependencies from uv.lock
 bash seed_registry.sh         # create registry.db with the sample data
+cp .env.example .env          # sets DATABASE_URL=sqlite:///registry.db
 uv run uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 `seed_registry.sh` deletes and rewrites `registry.db` each time it runs. Run it again to get back to the sample data. The database file is not committed to git.
+
+## Database
+
+The service reads `DATABASE_URL` and has no default: without it the server refuses to start. Set it in the environment, or copy `.env.example` to `.env` (not committed). A variable already set in the environment wins over `.env`.
+
+| Engine | `DATABASE_URL` |
+| --- | --- |
+| SQLite | `sqlite:///registry.db`. A relative path is resolved from the service folder, not the working directory. |
+| PostgreSQL | `postgresql://user:password@host:5432/dbname` |
+
+The service never creates tables. SQLite: `seed_registry.sh` builds `registry.db` from `schema.sql`. PostgreSQL: run `schema.postgres.sql` once on the production database before the first start (for example `psql "$DATABASE_URL" -f schema.postgres.sql`), then load the catalogue rows.
 
 Check that the server is up:
 
@@ -122,7 +135,7 @@ Every error response uses `application/problem+json` and has a `code` field.
 | `404` | `NOT_FOUND` | The id in the URL does not exist, or the URL is not a route |
 | `409` | `CONFLICT` | A plot name is already used on the same farm, or a farm with plots is deleted |
 | `405` | `VALIDATION` | The HTTP method is not allowed on that route. The `Allow` header lists the allowed methods. |
-| `503` | `UNAVAILABLE` | `registry.db` is missing. The response includes `Retry-After: 5`. |
+| `503` | `UNAVAILABLE` | The service cannot connect to the database: the SQLite file is missing, or PostgreSQL is unreachable. The response includes `Retry-After: 5`. The cause is logged. |
 
 The `title` in each error follows the standard reason phrase for its status, for example "Unprocessable Content" for `422`.
 
@@ -139,6 +152,14 @@ uv run pytest
 ```
 
 The tests build their own temporary databases, so they never change `registry.db`. The test database script `tests/seed_test_db.sh` needs `bash` and `sqlite3`.
+
+Each database test runs on SQLite and, when `TEST_DATABASE_URL` is set, on PostgreSQL too. Without it the `postgres` variants are skipped.
+
+```bash
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/registry_test uv run pytest
+```
+
+The PostgreSQL test database is dropped and rebuilt on every test, so its name must contain `test`; the tests refuse to run otherwise. On Windows, run PostgreSQL inside WSL or in Docker (for example `docker run -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres`) and connect to `localhost`.
 
 ## Performance check
 
@@ -160,12 +181,16 @@ The results of each run are kept in `perf/results/`.
 | File | Purpose |
 | --- | --- |
 | `main.py` | Creates the app and connects the routes and error handling |
-| `db.py` | Database connection, existence check, and the per-request transaction |
+| `db.py` | Reads `DATABASE_URL`, builds the engine, and gives each request one connection and transaction (`db.Conn`) |
+| `tables.py` | The five tables as SQLAlchemy `Table` objects |
+| `ids.py` | Parses id text as a UUID |
 | `errors.py` | Turns every error into `application/problem+json` |
 | `farms.py` | Farm routes |
 | `plots.py` | Plot routes and validation |
 | `catalogues.py` | Crop, soil, and emitter routes |
-| `schema.sql` | Table definitions, used by the seed script and the tests |
+| `schema.sql` | SQLite table definitions, used by the seed script and the tests |
+| `schema.postgres.sql` | PostgreSQL table definitions, run once by hand in production and by the tests |
+| `.env.example` | Example `DATABASE_URL`; copy to `.env` |
 | `seed_registry.sh` | Creates `registry.db` with the sample data |
 | `tests/` | Test suite |
 

@@ -55,3 +55,25 @@ def test_relative_sqlite_path_resolves_from_the_service_folder(monkeypatch, tmp_
     monkeypatch.setenv("DATABASE_URL", "sqlite:///registry.db")
 
     assert db.get_engine().url.database == str(Path(db.__file__).parent / "registry.db")
+
+
+def test_app_refuses_to_start_without_database_url():
+    from fastapi.testclient import TestClient
+
+    from main import app
+
+    # Entering the client runs the lifespan startup, like Unity's Awake().
+    with pytest.raises(RuntimeError, match="DATABASE_URL"):
+        with TestClient(app):
+            pass
+
+
+def test_app_starts_with_a_database_url_set(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from main import app
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'x.db'}")
+
+    with TestClient(app) as client:
+        assert client.get("/health").json() == {"status": "ok"}
