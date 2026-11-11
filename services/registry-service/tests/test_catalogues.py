@@ -1,7 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
 
-import db
 from main import app
 
 PROBLEM_JSON = "application/problem+json"
@@ -70,7 +69,7 @@ def test_write_methods_return_405_with_allow_header(path):
 
 @pytest.mark.parametrize("path", COLLECTION_PATHS + ITEM_PATHS)
 def test_database_unavailable_returns_503(monkeypatch, tmp_path, path):
-    monkeypatch.setattr(db, "DB_PATH", tmp_path / "missing.db")
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
 
     response = client.get(path)
 
@@ -78,3 +77,21 @@ def test_database_unavailable_returns_503(monkeypatch, tmp_path, path):
     assert response.headers["content-type"] == PROBLEM_JSON
     assert response.headers["retry-after"] == "5"
     assert response.json()["code"] == "UNAVAILABLE"
+
+
+def test_lists_are_sorted_by_id(test_db):
+    assert [row["id"] for row in client.get("/v1/crops").json()] == [
+        "bell-pepper",
+        "tomato",
+    ]
+    assert [row["id"] for row in client.get("/v1/soils").json()] == [
+        "clay-loam",
+        "loam",
+        "sand",
+    ]
+    assert [row["id"] for row in client.get("/v1/emitters").json()] == [
+        "dripnet-pc-0.6",
+        "dripnet-pc-1.0",
+        "dripnet-pc-1.6",
+        "dripnet-pc-2.0",
+    ]
