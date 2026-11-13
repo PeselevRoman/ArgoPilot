@@ -176,7 +176,8 @@ def name_taken(conn: Connection, farm_id: uuid.UUID, name: str, ignore_id: uuid.
 def body_farm_uuid(body: PlotCreate) -> uuid.UUID:
     # check_references has already refused a malformed farm_id, so this always parses.
     parsed = parse_uuid(body.farm_id)
-    assert parsed is not None
+    if parsed is None:
+        raise HTTPException(status_code=422, detail="Unknown farm")
     return parsed
 
 

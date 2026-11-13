@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import plots
@@ -517,3 +518,14 @@ def test_patch_race_on_name_returns_409(test_db, monkeypatch):
     # The rollback left the connection usable, and the plot kept its old name.
     assert client.get(f"/v1/plots/{south['id']}").json()["name"] == "South block"
     assert test_db.fetch_all("SELECT count(*) FROM plots") == [(2,)]
+
+
+def test_body_farm_uuid_refuses_a_malformed_farm_id():
+    # Unreachable through the API (check_references refuses it first), so call it directly.
+    body = plots.PlotCreate.model_construct(farm_id="not-a-uuid")
+
+    with pytest.raises(HTTPException) as caught:
+        plots.body_farm_uuid(body)
+
+    assert caught.value.status_code == 422
+    assert caught.value.detail == "Unknown farm"
