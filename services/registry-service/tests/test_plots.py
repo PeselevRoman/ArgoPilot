@@ -237,12 +237,12 @@ def test_list_returns_lowercase_hyphenated_ids_equal_to_get(test_db):
 
 def test_list_is_sorted_by_id(test_db):
     farm_id = new_farm()
-    for index in range(5):
+    for index in range(12):
         create_plot(farm_id, name=f"Block {index}")
 
     ids = [plot["id"] for plot in client.get("/v1/plots").json()]
 
-    assert len(ids) == 5
+    assert len(ids) == 12
     assert ids == sorted(ids)
 
 
