@@ -14,7 +14,7 @@ from pydantic import (
     model_validator,
 )
 
-from sqlalchemy import Connection, delete, insert, select, update
+from sqlalchemy import Connection, Text, cast, delete, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from db import Conn
@@ -56,6 +56,15 @@ PLOT_COLUMNS = (
     plots.c.id, plots.c.farm_id, plots.c.name, plots.c.area_m2, plots.c.crop_id,
     plots.c.planting_date, plots.c.soil_id, plots.c.row_spacing_m,
     plots.c.emitter_spacing_m, plots.c.emitter_id, plots.c.lat, plots.c.lon,
+)
+
+
+# The list route returns ids as text, so it reads them as text and skips the UUID round trip.
+# Postgres uuid::text is lowercase hyphenated, the same as the text SQLite stores.
+LIST_COLUMNS = (
+    cast(plots.c.id, Text).label("id"),
+    cast(plots.c.farm_id, Text).label("farm_id"),
+    *PLOT_COLUMNS[2:],
 )
 
 
@@ -195,13 +204,14 @@ def create_plot(body: PlotCreate, conn: Conn) -> Plot:
 
 @router.get("/plots")
 def list_plots(conn: Conn, farm_id: str | None = None) -> list[Plot]:
-    stmt = select(*PLOT_COLUMNS).order_by(plots.c.id)
+    stmt = select(*LIST_COLUMNS).order_by(plots.c.id)
     if farm_id is not None:
         parsed = parse_uuid(farm_id)
         if parsed is None:
             return []
         stmt = stmt.where(plots.c.farm_id == parsed)
-    return [plot_from_row(row) for row in conn.execute(stmt).mappings()]
+    keys = [column.name for column in stmt.selected_columns]
+    return [Plot.model_validate(dict(zip(keys, row))) for row in conn.execute(stmt)]
 
 
 @router.get("/plots/{plot_id}")

@@ -220,6 +220,40 @@ def test_list_returns_every_plot(test_db):
     )
 
 
+def test_list_returns_lowercase_hyphenated_ids_equal_to_get(test_db):
+    farm_id = new_farm()
+    created = client.post("/v1/plots", json=plot_body(farm_id.upper()))
+    assert created.status_code == 201
+    plot_id = created.json()["id"]
+
+    listed = client.get("/v1/plots").json()
+
+    assert len(listed) == 1
+    assert listed[0]["id"] == plot_id == str(uuid.UUID(plot_id))
+    assert listed[0]["farm_id"] == farm_id == str(uuid.UUID(farm_id))
+    assert listed[0] == client.get(f"/v1/plots/{plot_id}").json()
+
+
+def test_list_is_sorted_by_id(test_db):
+    farm_id = new_farm()
+    for index in range(5):
+        create_plot(farm_id, name=f"Block {index}")
+
+    ids = [plot["id"] for plot in client.get("/v1/plots").json()]
+
+    assert len(ids) == 5
+    assert ids == sorted(ids)
+
+
+def test_list_for_a_farm_with_no_plots_returns_empty_list(test_db):
+    farm_id = new_farm()
+
+    response = client.get("/v1/plots", params={"farm_id": farm_id})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_list_filters_by_farm_id(test_db):
     farm_id = new_farm("Demo cooperative")
     other_farm_id = new_farm("East farm")
