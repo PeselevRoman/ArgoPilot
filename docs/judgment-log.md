@@ -310,3 +310,10 @@ Decisions about running the service on PostgreSQL in production. `DATABASE_URL` 
 - **Suggested:** Point the new connection dependency at a closed port, `postgresql://u:p@127.0.0.1:1/test`. Labelled as personal judgment.
 - **Decision:** The new dependency's `503` test uses a real unreachable Postgres URL. The override decision above still covers the route-level test.
 - **Why:** Only a real connection attempt exercises the Postgres connection error that the `503` depends on. Trade-off: the test depends on nothing listening on local port 1, and it is slower than an override.
+
+## Pool timeouts return 503
+
+- **Question:** What should a request return when the database connection pool has no free connection within its wait time?
+- **Suggested:** The same `503 UNAVAILABLE` with `Retry-After: 5` as a failed connection, since both mean the database is temporarily unavailable. Labelled as personal judgment.
+- **Decision:** A connection-pool timeout returns `503 UNAVAILABLE` with `Retry-After: 5`, the same as a failed connection.
+- **Why:** The client sees one signal for a temporarily unavailable database instead of an unformatted `500`. Trade-off: a saturated pool is reported as an outage, which can hide a slow query.
