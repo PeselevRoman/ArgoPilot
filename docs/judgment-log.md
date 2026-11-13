@@ -317,3 +317,10 @@ Decisions about running the service on PostgreSQL in production. `DATABASE_URL` 
 - **Suggested:** The same `503 UNAVAILABLE` with `Retry-After: 5` as a failed connection, since both mean the database is temporarily unavailable. Labelled as personal judgment.
 - **Decision:** A connection-pool timeout returns `503 UNAVAILABLE` with `Retry-After: 5`, the same as a failed connection.
 - **Why:** The client sees one signal for a temporarily unavailable database instead of an unformatted `500`. Trade-off: a saturated pool is reported as an outage, which can hide a slow query.
+
+## The list route reads ids as text
+
+- **Question:** After the SQLAlchemy migration, `GET /v1/plots` took about twice as long per call (about 126 ms against about 70 ms before) and broke the 100 ms p95 target. How should the list route read ids?
+- **Suggested:** Select the id columns as text in the list query and skip the `UUID` round trip. Labelled as personal judgment.
+- **Decision:** The list route reads `id` and `farm_id` as text and builds its rows from plain tuples. `UuidId` is unchanged for writes and lookups.
+- **Why:** The response shows ids as text, so converting to `UUID` and back adds cost without changing the output. On PostgreSQL, `uuid` cast to text gives the same lowercase hyphenated form that SQLite stores. Trade-off: the list query handles ids differently from the other routes.
