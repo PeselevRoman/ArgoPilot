@@ -206,6 +206,15 @@ The perf helpers have their own small tests: `services/registry-service/.venv/bi
 
 The results of each run are kept in `perf/results/`.
 
+Latest runs, p95 at 10 requests per second (limit 100 ms):
+
+| Route | SQLite (2026-11-13) | PostgreSQL (2026-11-15) |
+| --- | --- | --- |
+| `GET /v1/plots` (list, 10,000 rows) | 86.56 ms | 83.50 ms |
+| `GET /v1/plots/{id}` | 6.51 ms | 7.62 ms |
+
+All ten routes passed on PostgreSQL, with 0.00% failed requests. The list of plots is the slowest route on both engines and has about 16% headroom. See `perf/results/2026-11-15T152751Z_v0.1.0.md`.
+
 ## Layout
 
 | File | Purpose |
