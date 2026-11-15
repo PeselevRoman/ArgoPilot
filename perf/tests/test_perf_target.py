@@ -37,8 +37,20 @@ def test_postgres_database_with_perf_in_its_name_is_accepted():
     perf_target.check_rebuildable("postgresql://u:p@127.0.0.1:5432/registry_perf")
 
 
-def test_sqlite_is_always_rebuildable():
-    perf_target.check_rebuildable("sqlite:////tmp/anything.db")
+def test_sqlite_file_with_perf_in_its_name_is_accepted():
+    perf_target.check_rebuildable("sqlite:////tmp/perf.db")
+
+
+@pytest.mark.parametrize("path", ["registry.db", "/home/me/registry.db"])
+def test_sqlite_file_without_perf_in_its_name_is_refused(path):
+    with pytest.raises(SystemExit):
+        perf_target.check_rebuildable(f"sqlite:///{path}")
+
+
+@pytest.mark.parametrize("query", ["dbname=registry", "database=registry"])
+def test_a_query_parameter_cannot_override_the_database_name(query):
+    with pytest.raises(SystemExit):
+        perf_target.check_rebuildable(f"postgresql://u:p@127.0.0.1:5432/registry_perf?{query}")
 
 
 def test_safe_hides_the_password():

@@ -19,19 +19,24 @@ def to_url(target: str) -> str:
 
 
 def check_rebuildable(url: str) -> None:
-    """Stop before anything is dropped, unless the database is meant to be thrown away.
+    """Stop before anything is deleted or dropped, unless the target is meant to be thrown away.
 
-    SQLite targets are files that the script deletes. A server database is only
-    rebuilt when its name contains 'perf', so 'registry' can never be wiped by mistake.
+    The database name (for a SQLite file: the file name) must contain 'perf', so
+    'registry' or 'registry.db' can never be wiped by a typo.
     """
     parsed = make_url(url)
     if parsed.get_backend_name() == "sqlite":
-        return
-    name = parsed.database or ""
+        name = Path(parsed.database or "").name
+    else:
+        # The driver lets a query parameter override the database in the path, which would
+        # make this check look at the wrong name.
+        if {"dbname", "database"} & set(parsed.query):
+            raise SystemExit("Refusing a URL with a dbname or database query parameter. Put the name in the path.")
+        name = parsed.database or ""
     if "perf" not in name:
         raise SystemExit(
-            f"Refusing to rebuild database '{name}': its name must contain 'perf', "
-            "because the script drops and recreates all tables."
+            f"Refusing to rebuild '{name}': its name must contain 'perf', "
+            "because the script deletes or drops everything in it."
         )
 
 

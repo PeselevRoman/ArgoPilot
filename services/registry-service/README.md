@@ -200,7 +200,7 @@ k6 run --summary-export summary.json perf/nfr_1_1.js
 python3 perf/record_results.py summary.json postgresql
 ```
 
-The PostgreSQL perf database is rebuilt on every run: its tables are dropped first. The script refuses any database whose name does not contain `perf`, so `registry` cannot be wiped by mistake. The scripts print the URL with the password hidden.
+The PostgreSQL perf database is rebuilt on every run: its tables are dropped first. The script refuses any target whose name does not contain `perf` (the database name, or the SQLite file name), so `registry` or `registry.db` cannot be wiped by mistake. A `dbname` or `database` query parameter in the URL is refused too. The scripts print the URL with the password hidden.
 
 The perf helpers have their own small tests: `services/registry-service/.venv/bin/python -m pytest perf/tests`, from the repository root.
 
