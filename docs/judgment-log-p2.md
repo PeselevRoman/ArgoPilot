@@ -29,3 +29,10 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** A separate database, rebuilt on every run, and refused unless its name contains `perf`. Labelled as personal judgment.
 - **Decision:** `perf/seed_perf_db.py` drops and recreates the tables of a PostgreSQL target only if the database name contains `perf`. `registry` and `registry_test` are refused. An empty target is refused too.
 - **Why:** The perf run must not touch real or test data, and a name check is a cheap guard against dropping the wrong database. Trade-off: one more database to create by hand.
+
+## Stale forecasts are served for up to 24 hours
+
+- **Question:** How old can a forecast be before the weather service stops serving it as stale?
+- **Suggested:** 24 hours. Labelled as personal judgment; no authoritative source was found.
+- **Decision:** After 3 hours a forecast is stale. If the provider fails, the service serves it with `stale: true` until it is 24 hours old, and then answers `503`. The limit is `MAX_STALE_HOURS` in `.env`.
+- **Why:** 24 hours covers an overnight outage, and near-term forecasts keep most of their value for a day. Longer limits risk watering on old rain information. Trade-off: after 24 hours the grower gets no plan.
