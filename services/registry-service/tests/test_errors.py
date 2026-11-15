@@ -70,8 +70,8 @@ def test_bad_body_returns_422_with_validation_code_and_field_in_detail():
     assert "name" in body["detail"]
 
 
-def test_database_unavailable_returns_503_with_retry_after_and_unavailable_code(monkeypatch, tmp_path):
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
+def test_database_unavailable_returns_503_with_retry_after_and_unavailable_code(tmp_path, set_database_url):
+    set_database_url(f"sqlite:///{tmp_path / 'missing.db'}")
 
     response = client.get("/database")
 

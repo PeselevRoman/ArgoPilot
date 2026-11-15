@@ -91,3 +91,14 @@ def test_main_does_not_print_the_database_url(empty_db, capsys):
 
     output = capsys.readouterr()
     assert empty_db.url not in output.out + output.err
+
+
+def test_main_prints_one_line_when_the_database_is_unreachable(set_database_url, capsys):
+    set_database_url("postgresql://u:p@127.0.0.1:1/test")  # nothing listens on port 1
+
+    assert seed.main() == 1
+
+    error = capsys.readouterr().err
+    assert "Could not connect" in error
+    assert "Traceback" not in error
+    assert len(error.strip().splitlines()) == 1

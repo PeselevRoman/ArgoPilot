@@ -18,8 +18,8 @@ def probe(conn: db.Conn) -> dict[str, int]:
     return {"foreign_keys": conn.execute(text("PRAGMA foreign_keys")).scalar_one()}
 
 
-def test_returns_503_with_retry_after_when_sqlite_file_is_missing(monkeypatch, tmp_path):
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
+def test_returns_503_with_retry_after_when_sqlite_file_is_missing(tmp_path, set_database_url):
+    set_database_url(f"sqlite:///{tmp_path / 'missing.db'}")
 
     response = TestClient(probe_app).get("/probe")
 
@@ -28,9 +28,9 @@ def test_returns_503_with_retry_after_when_sqlite_file_is_missing(monkeypatch, t
     assert not (tmp_path / "missing.db").exists()
 
 
-def test_returns_503_when_postgres_is_unreachable(monkeypatch, caplog):
+def test_returns_503_when_postgres_is_unreachable(caplog, set_database_url):
     # Port 1 is closed, so a real connection attempt fails.
-    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@127.0.0.1:1/test")
+    set_database_url("postgresql://u:p@127.0.0.1:1/test")
 
     with caplog.at_level(logging.ERROR, logger="registry.db"):
         response = TestClient(probe_app).get("/probe")
@@ -55,10 +55,10 @@ def test_returns_503_when_dependency_is_overridden_to_fail():
     assert response.headers["retry-after"] == "5"
 
 
-def test_connects_with_foreign_keys_on(monkeypatch, tmp_path):
+def test_connects_with_foreign_keys_on(tmp_path, set_database_url):
     database = tmp_path / "registry.db"
     sqlite3.connect(database).close()
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database}")
+    set_database_url(f"sqlite:///{database}")
 
     response = TestClient(probe_app).get("/probe")
 
@@ -75,10 +75,10 @@ def _notes_database(tmp_path) -> Path:
     return database
 
 
-def test_failed_request_discards_its_writes(monkeypatch, tmp_path):
+def test_failed_request_discards_its_writes(tmp_path, set_database_url):
     # A route that writes and then fails must leave nothing behind.
     database = _notes_database(tmp_path)
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database}")
+    set_database_url(f"sqlite:///{database}")
     app = FastAPI()
 
     @app.post("/write-then-fail")
@@ -94,9 +94,9 @@ def test_failed_request_discards_its_writes(monkeypatch, tmp_path):
     check.close()
 
 
-def test_commits_before_the_response_returns(monkeypatch, tmp_path):
+def test_commits_before_the_response_returns(tmp_path, set_database_url):
     database = _notes_database(tmp_path)
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database}")
+    set_database_url(f"sqlite:///{database}")
     app = FastAPI()
 
     @app.post("/write")

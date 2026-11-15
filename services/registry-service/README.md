@@ -175,6 +175,8 @@ Each database test runs on SQLite and, when `TEST_DATABASE_URL` is set, on Postg
 TEST_DATABASE_URL=postgresql://user:password@localhost:5432/registry_test uv run pytest
 ```
 
+Set `TEST_DATABASE_URL` in the shell, on the command line or with `export`, not in `.env`: the service reads only the settings it declares in `config.py`, so a `TEST_DATABASE_URL` line in `.env` is ignored and the PostgreSQL tests are skipped without a warning.
+
 The PostgreSQL test database is dropped and rebuilt on every test, so its name must contain `test`; the tests refuse to run otherwise. On Windows, run PostgreSQL inside WSL or in Docker (for example `docker run -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres`) and connect to `localhost`.
 
 ## Performance check

@@ -111,3 +111,13 @@ def clean_database_settings(monkeypatch, tmp_path):
     yield
     db.reset_engines()
     config.get_settings.cache_clear()
+
+
+@pytest.fixture
+def set_database_url(monkeypatch):
+    # Settings are cached, so a test that changes DATABASE_URL must clear the cache too.
+    def _set(url: str) -> None:
+        monkeypatch.setenv("DATABASE_URL", url)
+        config.get_settings.cache_clear()
+
+    return _set

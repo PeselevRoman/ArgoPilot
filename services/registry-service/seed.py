@@ -14,6 +14,7 @@ import uuid
 from pathlib import Path
 
 from sqlalchemy import Connection, Engine, inspect
+from sqlalchemy.exc import OperationalError
 
 import db
 import tables
@@ -122,6 +123,12 @@ def main() -> int:
         seed(engine)
     except RuntimeError as error:  # SeedError, and a missing or invalid DATABASE_URL
         print(error, file=sys.stderr)
+        return 1
+    except OperationalError:
+        # Server down, wrong password, unknown database. The URL is not printed: it holds the password.
+        url = db.get_engine().url
+        print(f"Could not connect to the database ({url.host}:{url.port}/{url.database}). "
+              "Is the server running, and are the user and password right?", file=sys.stderr)
         return 1
     print(f"Seeded {engine.url.database}: 2 farms, 4 plots, 2 crops, 3 soils, 4 emitters.")
     return 0

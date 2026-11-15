@@ -197,8 +197,8 @@ def test_delete_farm_with_plots_returns_409_conflict(test_db):
         ("delete", "/v1/farms/some-id"),
     ],
 )
-def test_database_unavailable_returns_503(monkeypatch, tmp_path, method, path):
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
+def test_database_unavailable_returns_503(tmp_path, method, path, set_database_url):
+    set_database_url(f"sqlite:///{tmp_path / 'missing.db'}")
 
     body = {"json": {"name": "Demo"}} if method in ("post", "patch") else {}
     response = getattr(client, method)(path, **body)

@@ -68,8 +68,8 @@ def test_write_methods_return_405_with_allow_header(path):
 
 
 @pytest.mark.parametrize("path", COLLECTION_PATHS + ITEM_PATHS)
-def test_database_unavailable_returns_503(monkeypatch, tmp_path, path):
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
+def test_database_unavailable_returns_503(tmp_path, path, set_database_url):
+    set_database_url(f"sqlite:///{tmp_path / 'missing.db'}")
 
     response = client.get(path)
 

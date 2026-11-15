@@ -99,3 +99,12 @@ def test_app_starts_with_a_database_url_set(monkeypatch, tmp_path):
 
     with TestClient(app) as client:
         assert client.get("/health").json() == {"status": "ok"}
+
+
+def test_set_database_url_replaces_a_url_that_was_already_read(set_database_url):
+    set_database_url("sqlite:///first.db")
+    assert config.get_settings().database_url == "sqlite:///first.db"
+
+    set_database_url("sqlite:///second.db")
+
+    assert config.get_settings().database_url == "sqlite:///second.db"
