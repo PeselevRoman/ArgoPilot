@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Engine, text
 
+import config
 import db
 
 TESTS_DIR = Path(__file__).parent
@@ -62,12 +63,14 @@ def test_db(request, monkeypatch, tmp_path):
         subprocess.run(["bash", str(SEED_SCRIPT), str(database)], check=True)
         url = f"sqlite:///{database}"
         monkeypatch.setenv("DATABASE_URL", url)
+        config.get_settings.cache_clear()
         return TestDatabase(url, db.get_engine())
 
     url = os.environ.get("TEST_DATABASE_URL")
     if not url:
         pytest.skip("TEST_DATABASE_URL is not set")
     monkeypatch.setenv("DATABASE_URL", url)
+    config.get_settings.cache_clear()
     engine = db.get_engine()
     name = engine.url.database or ""
     if "test" not in name:
@@ -83,8 +86,11 @@ def test_db(request, monkeypatch, tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def clean_database_settings(monkeypatch):
+def clean_database_settings(monkeypatch, tmp_path):
     # A developer's real .env or shell variable must never leak into a test.
     monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setattr(config, "ENV_FILE", tmp_path / "no.env")  # a file that does not exist
+    config.get_settings.cache_clear()
     yield
     db.reset_engines()
+    config.get_settings.cache_clear()

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+import config
 import db
 
 
@@ -24,24 +25,45 @@ def test_unsupported_scheme_raises(monkeypatch):
         db.get_database_url()
 
 
-def test_env_file_is_read(tmp_path, monkeypatch):
+def use_env_file(monkeypatch, tmp_path, content: str) -> None:
+    # Point the settings at a temporary .env, like swapping a config asset in a Unity test.
     env_file = tmp_path / ".env"
-    env_file.write_text("DATABASE_URL=sqlite:///x.db\n")
-    monkeypatch.delenv("DATABASE_URL", raising=False)
+    env_file.write_text(content)
+    monkeypatch.setattr(config, "ENV_FILE", env_file)
+    config.get_settings.cache_clear()
 
-    db.load_env_file(env_file)
 
-    assert db.get_database_url() == "sqlite:///x.db"
+def test_env_file_is_read(tmp_path, monkeypatch):
+    use_env_file(monkeypatch, tmp_path, "DATABASE_URL=sqlite:///x.db\n")
+
+    assert config.get_settings().database_url == "sqlite:///x.db"
 
 
 def test_env_variable_wins_over_env_file(tmp_path, monkeypatch):
-    env_file = tmp_path / ".env"
-    env_file.write_text("DATABASE_URL=sqlite:///from_file.db\n")
     monkeypatch.setenv("DATABASE_URL", "sqlite:///from_env.db")
+    use_env_file(monkeypatch, tmp_path, "DATABASE_URL=sqlite:///from_file.db\n")
 
-    db.load_env_file(env_file)
+    assert config.get_settings().database_url == "sqlite:///from_env.db"
 
-    assert db.get_database_url() == "sqlite:///from_env.db"
+
+def test_unrelated_variables_in_env_file_are_ignored(tmp_path, monkeypatch):
+    use_env_file(
+        monkeypatch, tmp_path,
+        "DATABASE_URL=sqlite:///x.db\nWEATHER_URL=http://127.0.0.1:8001\n",
+    )
+
+    assert config.get_settings().database_url == "sqlite:///x.db"
+
+
+def test_database_url_is_stripped(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "  sqlite:///x.db  ")
+
+    assert config.get_settings().database_url == "sqlite:///x.db"
+
+
+def test_error_message_names_the_variable():
+    with pytest.raises(RuntimeError, match="DATABASE_URL"):
+        config.get_settings()
 
 
 def test_plain_postgresql_url_uses_the_psycopg_driver(monkeypatch):

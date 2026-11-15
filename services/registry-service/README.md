@@ -24,7 +24,7 @@ uv run uvicorn main:app --host 127.0.0.1 --port 8000
 
 ## Database
 
-The service reads `DATABASE_URL` and has no default: without it the server refuses to start. Set it in the environment, or copy `.env.example` to `.env` (not committed). A variable already set in the environment wins over `.env`.
+The service reads `DATABASE_URL` and has no default: without it the server refuses to start. Set it in the environment, or copy `.env.example` to `.env` (not committed). A variable already set in the environment wins over `.env`. Settings are read in `config.py` with pydantic-settings; other variables in `.env` (later services add more) are ignored, and a missing or invalid `DATABASE_URL` stops the start with a clear error.
 
 | Engine | `DATABASE_URL` |
 | --- | --- |
@@ -181,7 +181,8 @@ The results of each run are kept in `perf/results/`.
 | File | Purpose |
 | --- | --- |
 | `main.py` | Creates the app and connects the routes and error handling |
-| `db.py` | Reads `DATABASE_URL`, builds the engine, and gives each request one connection and transaction (`db.Conn`) |
+| `config.py` | Reads and checks the settings (`DATABASE_URL`) from the environment and `.env` |
+| `db.py` | Builds the engine, and gives each request one connection and transaction (`db.Conn`) |
 | `tables.py` | The five tables as SQLAlchemy `Table` objects |
 | `ids.py` | Parses id text as a UUID |
 | `errors.py` | Turns every error into `application/problem+json` |

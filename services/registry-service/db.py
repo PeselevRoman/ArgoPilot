@@ -1,37 +1,22 @@
 import logging
-import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated
 
-from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from sqlalchemy import Connection, Engine, create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 
+import config
+
 logger = logging.getLogger("registry.db")
 
 SERVICE_DIR = Path(__file__).parent
-ENV_FILE = SERVICE_DIR / ".env"
-
-
-def load_env_file(path: Path = ENV_FILE) -> None:
-    # override=False: a variable already set in the environment wins over the file.
-    load_dotenv(path, override=False)
-
-
-load_env_file()
 
 
 def get_database_url() -> str:
-    url = os.environ.get("DATABASE_URL", "").strip()
-    if not url:
-        raise RuntimeError("DATABASE_URL is not set. See .env.example.")
-    backend = url.split(":", 1)[0].split("+", 1)[0]
-    if backend not in ("sqlite", "postgresql", "postgres"):
-        raise RuntimeError("DATABASE_URL must start with sqlite: or postgresql:")
-    return url
+    return config.get_settings().database_url
 
 
 _engines: dict[str, Engine] = {}
