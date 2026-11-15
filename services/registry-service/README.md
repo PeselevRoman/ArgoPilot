@@ -31,7 +31,23 @@ The service reads `DATABASE_URL` and has no default: without it the server refus
 | SQLite | `sqlite:///registry.db`. A relative path is resolved from the service folder, not the working directory. |
 | PostgreSQL | `postgresql://user:password@host:5432/dbname` |
 
-The service never creates tables. SQLite: `seed_registry.sh` builds `registry.db` from `schema.sql`. PostgreSQL: run `schema.postgres.sql` once on the production database before the first start (for example `psql "$DATABASE_URL" -f schema.postgres.sql`), then load the catalogue rows.
+The service itself never creates tables. To set up a new, empty database, run one command from this folder:
+
+```bash
+uv run python seed.py
+```
+
+It reads `DATABASE_URL`, creates the tables (`schema.sql` for SQLite, `schema.postgres.sql` for PostgreSQL) and loads the sample data: 2 farms, 4 plots, 2 crops, 3 soils and 4 emitters, the same rows as `seed_registry.sh`. It never deletes anything: if any of the tables already exists, it stops with a message and changes nothing.
+
+Set up PostgreSQL from nothing:
+
+```bash
+sudo -u postgres createdb -O YOUR_ROLE registry        # once, with your own role name
+# in .env: DATABASE_URL=postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry
+uv run python seed.py
+```
+
+SQLite: set `DATABASE_URL=sqlite:///registry.db` and run `uv run python seed.py` (or `bash seed_registry.sh`, which deletes and rewrites the file each time).
 
 Check that the server is up:
 
@@ -192,7 +208,8 @@ The results of each run are kept in `perf/results/`.
 | `schema.sql` | SQLite table definitions, used by the seed script and the tests |
 | `schema.postgres.sql` | PostgreSQL table definitions, run once by hand in production and by the tests |
 | `.env.example` | Example `DATABASE_URL`; copy to `.env` |
-| `seed_registry.sh` | Creates `registry.db` with the sample data |
+| `seed.py` | Creates the tables and loads the sample data in an empty SQLite or PostgreSQL database |
+| `seed_registry.sh` | Creates `registry.db` with the sample data (SQLite only) |
 | `tests/` | Test suite |
 
 ## Design decisions

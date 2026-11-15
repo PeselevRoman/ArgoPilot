@@ -55,17 +55,8 @@ def _run_sql_file(engine: Engine, path: Path) -> None:
             conn.exec_driver_sql(statement)
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
-def test_db(request, monkeypatch, tmp_path):
-    # Runs the test once per engine, like a C# [Theory] with [InlineData].
-    if request.param == "sqlite":
-        database = tmp_path / "test.db"
-        subprocess.run(["bash", str(SEED_SCRIPT), str(database)], check=True)
-        url = f"sqlite:///{database}"
-        monkeypatch.setenv("DATABASE_URL", url)
-        config.get_settings.cache_clear()
-        return TestDatabase(url, db.get_engine())
-
+def _reset_postgres_tables(monkeypatch) -> TestDatabase:
+    # Shared by test_db and empty_db: connect to TEST_DATABASE_URL and drop the five tables.
     url = os.environ.get("TEST_DATABASE_URL")
     if not url:
         pytest.skip("TEST_DATABASE_URL is not set")
@@ -80,9 +71,35 @@ def test_db(request, monkeypatch, tmp_path):
         )
     with engine.begin() as conn:
         conn.exec_driver_sql(f"DROP TABLE IF EXISTS {', '.join(TABLES)} CASCADE")
-    _run_sql_file(engine, POSTGRES_SCHEMA)
-    _run_sql_file(engine, CATALOGUES_SEED)
     return TestDatabase(url, engine)
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def test_db(request, monkeypatch, tmp_path):
+    # Runs the test once per engine, like a C# [Theory] with [InlineData].
+    if request.param == "sqlite":
+        database = tmp_path / "test.db"
+        subprocess.run(["bash", str(SEED_SCRIPT), str(database)], check=True)
+        url = f"sqlite:///{database}"
+        monkeypatch.setenv("DATABASE_URL", url)
+        config.get_settings.cache_clear()
+        return TestDatabase(url, db.get_engine())
+
+    database = _reset_postgres_tables(monkeypatch)
+    _run_sql_file(database.engine, POSTGRES_SCHEMA)
+    _run_sql_file(database.engine, CATALOGUES_SEED)
+    return database
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def empty_db(request, monkeypatch, tmp_path):
+    # A database with no tables at all, for testing the seed script.
+    if request.param == "sqlite":
+        url = f"sqlite:///{tmp_path / 'empty.db'}"  # SQLite creates the file on first connect
+        monkeypatch.setenv("DATABASE_URL", url)
+        config.get_settings.cache_clear()
+        return TestDatabase(url, db.get_engine())
+    return _reset_postgres_tables(monkeypatch)
 
 
 @pytest.fixture(autouse=True)
