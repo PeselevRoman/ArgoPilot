@@ -1,80 +1,82 @@
 """Build the performance database: 100 farms and 10,000 plots.
 
-Usage, from the repository root:
-    python3 perf/seed_perf_db.py perf/perf.db
+The target is a SQLite file path or a database URL. A SQLite file is deleted and
+rewritten. A PostgreSQL database is rebuilt (its tables are dropped), and only
+if its name contains 'perf'.
+
+Usage, from the repository root, with the service's own Python:
+    services/registry-service/.venv/bin/python perf/seed_perf_db.py perf/perf.db
+    services/registry-service/.venv/bin/python perf/seed_perf_db.py "$PERF_DATABASE_URL"
 """
 
+import datetime
+import os
 import random
-import sqlite3
 import sys
 import uuid
 from pathlib import Path
 
 SERVICE = Path(__file__).resolve().parent.parent / "services" / "registry-service"
-SCHEMA = SERVICE / "schema.sql"
+sys.path.insert(0, str(SERVICE))
+
+import db  # noqa: E402
+import seed  # noqa: E402
+import tables  # noqa: E402
+from perf_target import check_rebuildable, safe, to_url  # noqa: E402
 
 FARMS = 100
 PLOTS = 10_000
 SEED = 42  # A fixed seed, so every run builds the same data.
 
-CROPS = [("tomato", "Tomato"), ("bell-pepper", "Bell pepper")]
-SOILS = [("sand", "Sand", 83), ("loam", "Loam", 175), ("clay-loam", "Clay loam", 200)]
-EMITTERS = [
-    ("dripnet-pc-0.6", "DripNet PC", 0.6),
-    ("dripnet-pc-1.0", "DripNet PC", 1.0),
-    ("dripnet-pc-1.6", "DripNet PC", 1.6),
-    ("dripnet-pc-2.0", "DripNet PC", 2.0),
-]
 
-
-def random_uuid(rng: random.Random) -> str:
-    return str(uuid.UUID(int=rng.getrandbits(128), version=4))
+def random_uuid(rng: random.Random) -> uuid.UUID:
+    return uuid.UUID(int=rng.getrandbits(128), version=4)
 
 
 def main() -> None:
-    target = Path(sys.argv[1])
-    target.unlink(missing_ok=True)
+    if len(sys.argv) != 2:
+        sys.exit("usage: python perf/seed_perf_db.py PATH_OR_DATABASE_URL")
+    url = to_url(sys.argv[1])
+    check_rebuildable(url)  # before anything is deleted or dropped
+
+    os.environ["DATABASE_URL"] = url
+    engine = db.get_engine()
+    if engine.dialect.name == "sqlite":
+        Path(engine.url.database).unlink(missing_ok=True)
+    else:
+        with engine.begin() as conn:
+            conn.exec_driver_sql("DROP TABLE IF EXISTS plots, farms, crops, soils, emitters CASCADE")
+
     rng = random.Random(SEED)
-
-    conn = sqlite3.connect(target)
-    conn.executescript(SCHEMA.read_text())
-    conn.executemany("INSERT INTO crops (id, name) VALUES (?, ?)", CROPS)
-    conn.executemany("INSERT INTO soils (id, name, available_water_mm_per_m) VALUES (?, ?, ?)", SOILS)
-    conn.executemany("INSERT INTO emitters (id, name, flow_lph) VALUES (?, ?, ?)", EMITTERS)
-
     farm_ids = [random_uuid(rng) for _ in range(FARMS)]
-    conn.executemany(
-        "INSERT INTO farms (id, name) VALUES (?, ?)",
-        [(farm_id, f"Farm {number}") for number, farm_id in enumerate(farm_ids, start=1)],
-    )
+    farms = [{"id": farm_id, "name": f"Farm {number}"} for number, farm_id in enumerate(farm_ids, start=1)]
 
     plots = []
     for number in range(PLOTS):
-        farm_id = farm_ids[number % FARMS]
         # Plot names only need to be unique within their farm.
-        plots.append((
-            random_uuid(rng),
-            farm_id,
-            f"Plot {number // FARMS + 1}",
-            round(rng.uniform(200, 5000), 1),
-            rng.choice(CROPS)[0],
-            f"2026-{rng.randint(1, 9):02d}-{rng.randint(1, 28):02d}",
-            rng.choice(SOILS)[0],
-            1.5,
-            0.4,
-            rng.choice(EMITTERS)[0],
-            round(rng.uniform(-60, 60), 4),
-            round(rng.uniform(-170, 170), 4),
-        ))
-    conn.executemany(
-        "INSERT INTO plots (id, farm_id, name, area_m2, crop_id, planting_date, soil_id, "
-        "row_spacing_m, emitter_spacing_m, emitter_id, lat, lon) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        plots,
-    )
-    conn.commit()
-    conn.close()
-    print(f"Wrote {target}: {FARMS} farms, {PLOTS} plots")
+        plots.append({
+            "id": random_uuid(rng),
+            "farm_id": farm_ids[number % FARMS],
+            "name": f"Plot {number // FARMS + 1}",
+            "area_m2": round(rng.uniform(200, 5000), 1),
+            "crop_id": rng.choice(seed.CROPS)["id"],
+            "planting_date": datetime.date(2026, rng.randint(1, 9), rng.randint(1, 28)),
+            "soil_id": rng.choice(seed.SOILS)["id"],
+            "row_spacing_m": 1.5,
+            "emitter_spacing_m": 0.4,
+            "emitter_id": rng.choice(seed.EMITTERS)["id"],
+            "lat": round(rng.uniform(-60, 60), 4),
+            "lon": round(rng.uniform(-170, 170), 4),
+        })
+
+    seed.create_schema(engine)
+    with engine.begin() as conn:
+        conn.execute(tables.crops.insert(), seed.CROPS)
+        conn.execute(tables.soils.insert(), seed.SOILS)
+        conn.execute(tables.emitters.insert(), seed.EMITTERS)
+        conn.execute(tables.farms.insert(), farms)
+        conn.execute(tables.plots.insert(), plots)
+    print(f"Wrote {safe(url)}: {FARMS} farms, {PLOTS} plots")
 
 
 if __name__ == "__main__":

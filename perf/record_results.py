@@ -2,7 +2,7 @@
 
 Usage, from the repository root:
     k6 run --summary-export path/to/summary.json perf/nfr_1_1.js
-    python3 perf/record_results.py path/to/summary.json
+    python3 perf/record_results.py path/to/summary.json [sqlite|postgresql]
 
 Each run writes perf/results/<UTC time>_v<service version>.md, so the log
 keeps every run with its time and the code version it measured.
@@ -18,7 +18,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "perf" / "results"
 TARGET_MS = 100
-DATASET = "100 farms, 10,000 plots (perf/seed_perf_db.py, seed 42)"
+
+
+def dataset_line(engine_name: str) -> str:
+    return f"100 farms, 10,000 plots (perf/seed_perf_db.py, seed 42), on {engine_name}"
+
+
 ENDPOINTS = [
     ("list_farms", "GET /v1/farms"),
     ("get_farm", "GET /v1/farms/{id}"),
@@ -50,6 +55,7 @@ def git_state() -> str:
 
 def main() -> None:
     summary_path = Path(sys.argv[1])
+    engine_name = sys.argv[2] if len(sys.argv) > 2 else "sqlite"
     summary = json.loads(summary_path.read_text())
     metrics = summary["metrics"]
 
@@ -75,7 +81,7 @@ def main() -> None:
         f"- Git commit: {git_state()}",
         f"- Run time (UTC): {run_time.strftime('%Y-%m-%d %H:%M:%S')}",
         f"- k6: {run('k6', 'version').split()[1]}",
-        f"- Dataset: {DATASET}",
+        f"- Dataset: {dataset_line(engine_name)}",
         f"- Target (NFR-1.1): p95 under {TARGET_MS} ms at 10 requests per second, per endpoint",
         f"- Failed requests: {failed_rate * 100:.2f}%",
         "",

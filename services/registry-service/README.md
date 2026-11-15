@@ -181,7 +181,7 @@ The PostgreSQL test database is dropped and rebuilt on every test, so its name m
 
 The performance check measures the list and get-by-id routes at 10 requests per second each. The target is a 95th-percentile response time under 100 ms. It needs [k6](https://k6.io), which is installed separately from this project.
 
-From the repository root:
+From the repository root, on SQLite:
 
 ```bash
 services/registry-service/.venv/bin/python perf/seed_perf_db.py perf/perf.db   # 100 farms, 10,000 plots
@@ -189,6 +189,20 @@ services/registry-service/.venv/bin/python perf/run_server.py perf/perf.db &   #
 k6 run --summary-export summary.json perf/nfr_1_1.js
 python3 perf/record_results.py summary.json                                    # writes perf/results/
 ```
+
+On PostgreSQL, use a separate database whose name contains `perf` (for example `registry_perf`), and give the scripts its URL from a shell variable:
+
+```bash
+export PERF_DATABASE_URL='postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry_perf'
+services/registry-service/.venv/bin/python perf/seed_perf_db.py "$PERF_DATABASE_URL"
+services/registry-service/.venv/bin/python perf/run_server.py "$PERF_DATABASE_URL" &
+k6 run --summary-export summary.json perf/nfr_1_1.js
+python3 perf/record_results.py summary.json postgresql
+```
+
+The PostgreSQL perf database is rebuilt on every run: its tables are dropped first. The script refuses any database whose name does not contain `perf`, so `registry` cannot be wiped by mistake. The scripts print the URL with the password hidden.
+
+The perf helpers have their own small tests: `services/registry-service/.venv/bin/python -m pytest perf/tests`, from the repository root.
 
 The results of each run are kept in `perf/results/`.
 
