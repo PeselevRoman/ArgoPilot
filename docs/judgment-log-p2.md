@@ -22,3 +22,10 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** A Python script (`seed.py`) using SQLAlchemy, over `psql` with SQL files or Alembic. Labelled as personal judgment.
 - **Decision:** `uv run python seed.py` picks the schema file for the engine, creates the tables and inserts the rows. It stops with an error if the tables already exist, and never drops data.
 - **Why:** The same command works on SQLite and PostgreSQL (NFR-2.1), needs no `psql`, and can be tested in pytest. Trade-off: the seed rows now live in a second place besides `seed_registry.sh`. Alembic is the standard tool when a schema keeps evolving, and P2 does not need it.
+
+## PostgreSQL performance data lives in a separate `registry_perf` database, guarded by name
+
+- **Question:** NFR-2.2 needs p95 on PostgreSQL with the 10,000-plot dataset. Where does that data go?
+- **Suggested:** A separate database, rebuilt on every run, and refused unless its name contains `perf`. Labelled as personal judgment.
+- **Decision:** `perf/seed_perf_db.py` drops and recreates the tables of a PostgreSQL target only if the database name contains `perf`. `registry` and `registry_test` are refused. An empty target is refused too.
+- **Why:** The perf run must not touch real or test data, and a name check is a cheap guard against dropping the wrong database. Trade-off: one more database to create by hand.
