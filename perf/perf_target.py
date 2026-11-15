@@ -10,6 +10,9 @@ from sqlalchemy.engine import make_url
 
 def to_url(target: str) -> str:
     """A database URL is kept as it is; anything else is a SQLite file path."""
+    if not target.strip():
+        # An empty shell variable (for example an unset PERF_DATABASE_URL) must not turn into the current folder.
+        raise SystemExit("No database given. Is PERF_DATABASE_URL set in this terminal?")
     if "://" in target:
         return target
     return f"sqlite:///{Path(target).resolve()}"

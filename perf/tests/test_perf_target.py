@@ -53,3 +53,9 @@ def test_dataset_line_names_the_engine():
 
     assert "postgresql" in line
     assert "10,000 plots" in line
+
+
+@pytest.mark.parametrize("target", ["", "   "])
+def test_an_empty_target_is_refused(target):
+    with pytest.raises(SystemExit):
+        perf_target.to_url(target)
