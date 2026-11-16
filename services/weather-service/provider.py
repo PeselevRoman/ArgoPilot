@@ -50,7 +50,8 @@ def _number(value: object) -> float:
         raise ProviderError("provider value is too large") from None
     if not math.isfinite(number) or number < 0:
         raise ProviderError("provider value is not a finite non-negative number")
-    return number
+    # -0.0 is a valid zero, but a caller could print or compare it oddly: store a plain 0.0.
+    return 0.0 if number == 0 else number
 
 
 def parse_response(payload: object) -> ProviderForecast:

@@ -68,8 +68,8 @@ All required, no defaults in code, except the API key, which may be empty. The s
 - `config.py`: settings.
 - `errors.py`: `application/problem+json` for `VALIDATION`, `UNAVAILABLE`, and the 404/405 mappings. A copy of the registry's behaviour, not an import (services never import each other).
 - `provider.py`: the only code that knows Open-Meteo: builds the request, parses and validates the response, returns plain `date`/`float` values and the UTC offset. Holds the source name `"open-meteo"`.
-- `cache.py`: cell maths, entries, freshness, stale limit, purge, in-flight fetches.
-- `forecast.py`: the logic that ties them together (cache, provider, retries, cutting days, the stale flag).
+- `cache.py`: cell maths and the stored entries (age, local today, which days an entry can cover).
+- `forecast.py`: the logic that ties them together: the cache itself, freshness and the stale limit, the purge, the shared in-flight fetch per cell, retries, cutting days, the stale flag.
 - `main.py`: app, routes `/v1/forecast` and `/health`. Port 8001.
 
 ## Testing

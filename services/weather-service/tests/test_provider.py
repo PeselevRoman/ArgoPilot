@@ -1,3 +1,4 @@
+import math
 import copy
 import json
 from datetime import date
@@ -147,3 +148,14 @@ def test_parse_accepts_real_utc_offsets(offset):
     forecast = provider.parse_response(valid_payload(FIRST, offset=offset))
 
     assert forecast.utc_offset_seconds == offset
+
+
+@pytest.mark.parametrize("variable", [ET0, RAIN])
+def test_parse_turns_negative_zero_into_plain_zero(variable):
+    payload = _mutate(lambda p: p["daily"][variable].__setitem__(0, -0.0))
+
+    value = provider.parse_response(payload).days[0]
+    number = value.et0_mm if variable == ET0 else value.rain_mm
+
+    assert number == 0.0
+    assert math.copysign(1.0, number) == 1.0  # not -0.0, which a caller could print or compare oddly

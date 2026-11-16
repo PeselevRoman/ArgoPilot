@@ -273,3 +273,23 @@ async def test_old_entries_are_purged_when_a_new_one_is_stored():
     await service.get(40.25, 10.79, 7)
 
     assert service.cache_size == 1  # the first cell's entry was older than 24 hours
+
+
+async def test_fetch_still_fills_the_cache_when_every_caller_cancels():
+    service, fake, _ = build(valid_payload(TODAY), slow=True)
+    tasks = [asyncio.create_task(service.get(31.25, 34.79, 7)) for _ in range(3)]
+    await asyncio.sleep(0.005)  # all three are waiting for the provider
+
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.sleep(0.1)  # the shielded fetch finishes on its own
+
+    # Checked before any new request: the abandoned fetch itself must have filled the cache.
+    assert len(fake.calls) == 1
+    assert service.cache_size == 1
+
+    result = await service.get(31.25, 34.79, 7)
+
+    assert len(fake.calls) == 1  # served from that cache entry, no new provider call
+    assert result.stale is False
