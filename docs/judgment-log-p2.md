@@ -84,3 +84,10 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 
   Other variables in `.env` (for example a later service's) are ignored. `.env.example` lists every variable with a safe example value.
 - **Why:** A default in code hides a choice nobody made, and it could silently differ in production. With none, `.env.example` is the complete list of what the person setting up the service has to decide. `nan` passes "greater than 0" checks (every comparison with `nan` is false), and a huge number of hours would overflow date calculations, so both would start the service and then break every request. Failing at startup finds that at once. Trade-off: slightly more setup for a new developer, who copies `.env.example` to `.env`. The registry follows the same pattern with `DATABASE_URL`.
+
+## The planner uses the single crop coefficient (FAO-56 Chapter 6), not the dual one
+
+- **Question:** FAO-56 recommends the dual coefficient (Kcb + Ke) for drip irrigation, but it needs wind, humidity and soil-evaporation inputs that `weather-service` does not give. Which method does the planner use?
+- **Suggested:** The single coefficient: ETc = Kc × ET0, with Kc following the FAO-56 curve for the growth stage. Labelled as personal judgment.
+- **Decision:** The planner uses the single crop coefficient from Chapter 6, with Kc values and stage lengths for tomato and bell pepper. Chapter 7 (the dual method, soil-evaporation layer) is out of scope. The README and the `irrigation-calc-reference` skill state that this is an approximation, and that FAO-56 names the dual method as better suited to drip.
+- **Why:** `weather-service` provides only ET0 and rain, the assignment describes Kc as a factor on ET0, and FAO-56 accepts the single coefficient for results of this kind. Trade-off: the later stages have no drip-specific correction, so the plan can be less accurate for drip than a dual-method plan.
