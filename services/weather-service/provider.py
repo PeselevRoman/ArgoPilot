@@ -43,9 +43,13 @@ def _number(value: object) -> float:
     # bool is a subclass of int, so it must be refused before the number check.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ProviderError("provider value is not a number")
-    if not math.isfinite(value) or value < 0:
+    try:
+        number = float(value)  # a huge JSON integer overflows here
+    except OverflowError:
+        raise ProviderError("provider value is too large") from None
+    if not math.isfinite(number) or number < 0:
         raise ProviderError("provider value is not a finite non-negative number")
-    return float(value)
+    return number
 
 
 def parse_response(payload: object) -> ProviderForecast:

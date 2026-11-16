@@ -116,3 +116,24 @@ async def test_provider_error_message_has_no_secret():
     assert "SECRET123" not in message
     assert "provider.test" not in message
     assert "?" not in message
+
+
+HUGE = 10**400
+
+
+@pytest.mark.parametrize("variable", [ET0, RAIN])
+def test_parse_refuses_integer_too_large_for_a_float(variable):
+    payload = valid_payload(FIRST)
+    payload["daily"][variable][0] = HUGE
+    with pytest.raises(provider.ProviderError):
+        provider.parse_response(payload)
+
+
+@pytest.mark.anyio
+async def test_fetch_refuses_body_with_a_400_digit_integer():
+    payload = valid_payload(FIRST)
+    payload["daily"][RAIN][0] = HUGE
+    fake = FakeProvider(payload)
+    async with fake.client() as client:
+        with pytest.raises(provider.ProviderError):
+            await provider.fetch(client, make_settings(), 1.0, 2.0)
