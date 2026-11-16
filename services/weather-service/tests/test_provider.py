@@ -54,6 +54,9 @@ INVALID = {
     "unit_cm": _mutate(lambda p: p["daily_units"].__setitem__(ET0, "cm")),
     "units_missing": _mutate(lambda p: p.pop("daily_units")),
     "offset_missing": _mutate(lambda p: p.pop("utc_offset_seconds")),
+    "offset_huge": _mutate(lambda p: p.__setitem__("utc_offset_seconds", 10**12)),
+    "offset_beyond_a_day_east": _mutate(lambda p: p.__setitem__("utc_offset_seconds", 18 * 3600 + 1)),
+    "offset_beyond_a_day_west": _mutate(lambda p: p.__setitem__("utc_offset_seconds", -(18 * 3600 + 1))),
 }
 
 
@@ -137,3 +140,10 @@ async def test_fetch_refuses_body_with_a_400_digit_integer():
     async with fake.client() as client:
         with pytest.raises(provider.ProviderError):
             await provider.fetch(client, make_settings(), 1.0, 2.0)
+
+
+@pytest.mark.parametrize("offset", [-12 * 3600, 0, 14 * 3600])
+def test_parse_accepts_real_utc_offsets(offset):
+    forecast = provider.parse_response(valid_payload(FIRST, offset=offset))
+
+    assert forecast.utc_offset_seconds == offset

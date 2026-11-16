@@ -1,5 +1,6 @@
 """The HTTP layer, with a fake provider and a movable clock. No real network."""
 
+import logging
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -184,3 +185,13 @@ def test_app_refuses_to_start_without_settings():
     with pytest.raises(RuntimeError, match="PROVIDER_BASE_URL"):
         with TestClient(create_app()):
             pass
+
+
+def test_api_key_never_reaches_the_logs_even_at_info_level(make_client, caplog):
+    client, _, _ = make_client(valid_payload(TODAY), provider_api_key="SECRET123")
+
+    with caplog.at_level(logging.INFO):
+        assert client.get(URL).status_code == 200
+
+    # httpx logs every request line, query string included, at INFO unless told otherwise.
+    assert "SECRET123" not in caplog.text

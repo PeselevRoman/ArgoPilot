@@ -85,3 +85,27 @@ def test_invalid_value_is_refused(monkeypatch, name, value):
     set_env(monkeypatch, **{name: value})
     with pytest.raises(RuntimeError, match=name):
         config.get_settings()
+
+
+@pytest.mark.parametrize("name", [
+    "PROVIDER_TIMEOUT_SECONDS", "PROVIDER_RETRY_DELAY_SECONDS", "FRESHNESS_HOURS", "MAX_STALE_HOURS",
+])
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_non_finite_numbers_are_refused_at_startup(monkeypatch, name, value):
+    set_env(monkeypatch, **{name: value})
+    with pytest.raises(RuntimeError, match=name):
+        config.get_settings()
+
+
+@pytest.mark.parametrize("name", ["FRESHNESS_HOURS", "MAX_STALE_HOURS"])
+def test_absurdly_long_periods_are_refused_at_startup(monkeypatch, name):
+    # 1e12 hours would overflow date arithmetic and make every request fail later.
+    set_env(monkeypatch, **{name: "1e12"})
+    with pytest.raises(RuntimeError, match=name):
+        config.get_settings()
+
+
+def test_one_year_is_the_longest_period_accepted(monkeypatch):
+    set_env(monkeypatch, FRESHNESS_HOURS="8760", MAX_STALE_HOURS="8760")
+
+    assert config.get_settings().max_stale_hours == 8760

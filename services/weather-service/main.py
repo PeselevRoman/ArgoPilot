@@ -1,6 +1,7 @@
 """The HTTP layer: two routes, and the wiring of the forecast service."""
 
 import datetime
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -14,6 +15,10 @@ from config import Settings
 from errors import add_error_handlers
 from forecast import Clock, ForecastService, ForecastUnavailable
 from provider import SOURCE
+
+# httpx logs every request line at INFO, query string included. With a paid plan the query
+# holds the API key, so keep that logger quiet whatever the logging setup is.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 class DayOut(BaseModel):

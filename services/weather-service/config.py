@@ -14,10 +14,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Module variable, read at call time, so tests can point it at another file.
 ENV_FILE = Path(__file__).parent / ".env"
 
+# Longer periods are a typo, and huge values overflow date arithmetic.
+MAX_HOURS = 8760
+
 
 class Settings(BaseSettings):
     # extra="ignore": other services' variables in the same .env must not crash startup.
-    model_config = SettingsConfigDict(extra="ignore")
+    # allow_inf_nan=False: "nan" or "inf" in .env would pass the "greater than 0" checks
+    # (every comparison with nan is False) and then break every request later.
+    model_config = SettingsConfigDict(extra="ignore", allow_inf_nan=False)
 
     provider_base_url: str
     provider_api_key: str = ""  # the only optional setting
@@ -62,6 +67,8 @@ class Settings(BaseSettings):
     def check_freshness(cls, value: float) -> float:
         if value <= 0:
             raise ValueError("FRESHNESS_HOURS must be greater than 0")
+        if value > MAX_HOURS:
+            raise ValueError(f"FRESHNESS_HOURS must be at most {MAX_HOURS} (one year)")
         return value
 
     @field_validator("retry_after_seconds")
@@ -69,6 +76,13 @@ class Settings(BaseSettings):
     def check_retry_after(cls, value: int) -> int:
         if value <= 0:
             raise ValueError("RETRY_AFTER_SECONDS must be greater than 0")
+        return value
+
+    @field_validator("max_stale_hours")
+    @classmethod
+    def check_max_stale(cls, value: float) -> float:
+        if value > MAX_HOURS:
+            raise ValueError(f"MAX_STALE_HOURS must be at most {MAX_HOURS} (one year)")
         return value
 
     @model_validator(mode="after")

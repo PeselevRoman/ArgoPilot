@@ -14,6 +14,7 @@ from config import Settings
 
 SOURCE = "open-meteo"
 FETCH_DAYS = 9
+MAX_UTC_OFFSET_SECONDS = 18 * 3600
 
 _ET0 = "et0_fao_evapotranspiration"
 _RAIN = "precipitation_sum"
@@ -58,6 +59,9 @@ def parse_response(payload: object) -> ProviderForecast:
     offset = payload.get("utc_offset_seconds")
     if isinstance(offset, bool) or not isinstance(offset, int):
         raise ProviderError("provider utc offset is missing or not an integer")
+    if abs(offset) > MAX_UTC_OFFSET_SECONDS:
+        # Real offsets run from -12 to +14 hours. A wild value would break date maths later.
+        raise ProviderError("provider utc offset is out of range")
     units = payload.get("daily_units")
     if not isinstance(units, dict) or units.get(_ET0) != "mm" or units.get(_RAIN) != "mm":
         raise ProviderError("provider units are missing or not mm")
