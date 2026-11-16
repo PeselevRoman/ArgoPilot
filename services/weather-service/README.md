@@ -136,6 +136,18 @@ Read in `config.py` with pydantic-settings. Every variable is required except th
 | `errors.py` | Turns every error into `application/problem+json` |
 | `tests/` | Test suite; the provider and the clock are fakes, so no test uses the network |
 
+## Performance check (NFR-2.3)
+
+A fresh forecast (no provider call) is answered with p95 at most 100 ms at 10 requests per second. The check is outside the test suite and uses a fake provider, so it does not depend on the internet. From the repository root:
+
+```bash
+services/weather-service/.venv/bin/python perf/run_weather_server.py &   # port 8011
+k6 run --summary-export summary.json perf/weather_nfr_2_3.js
+python3 perf/record_weather_results.py summary.json                      # writes perf/results/
+```
+
+Latest result (2026-11-16): **p95 2.97 ms**, 0.00% failed requests, 602 requests at 10 per second. See `perf/results/2026-11-16T092217Z_weather_v0.1.0.md`. The tooling has its own tests: `services/weather-service/.venv/bin/python -m pytest perf/tests/test_weather_perf.py -q`.
+
 ## Test
 
 ```bash
