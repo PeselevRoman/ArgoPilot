@@ -36,3 +36,10 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** 24 hours. Labelled as personal judgment; no authoritative source was found.
 - **Decision:** After 3 hours a forecast is stale. If the provider fails, the service serves it with `stale: true` until it is 24 hours old, and then answers `503`. The limit is `MAX_STALE_HOURS` in `.env`.
 - **Why:** 24 hours covers an overnight outage, and near-term forecasts keep most of their value for a day. Longer limits risk watering on old rain information. Trade-off: after 24 hours the grower gets no plan.
+
+## A forecast cell is a 0.1° square; the provider is asked for its centre
+
+- **Question:** FR-2.5 says two points in the same 0.1° grid cell share one forecast. Which points belong to a cell, which point do we ask the provider about, and which coordinates does the answer show?
+- **Suggested:** Round down to the tenth, ask for the cell centre, echo the requested point. Labelled as personal judgment.
+- **Decision:** A cell is found by rounding each coordinate down to 0.1°, so `31.3` belongs to cell `31.3`, and `-0.05` to the cell just below zero. The calculation is exact on the decimal text of the number, not on floating-point arithmetic. The provider is asked for the cell's centre (cell origin plus 0.05°), clamped into -90..90 and -180..180, so `lat=90` or `lon=180` does not send an invalid request. The response shows the coordinates that were requested, not the cell's.
+- **Why:** The centre represents every point in the cell equally, so all of them get the same numbers whichever one asked first. Rounding down gives each point exactly one cell, and the exact decimal arithmetic avoids float errors at the cell edges. Without the clamp, the top edge of the map would fail with a provider error. Trade-off: a point up to about 0.07° away from the centre gets the centre's forecast, which is small compared to the provider's own grid. The response's `lat`/`lon` differ from the forecast's true position, but they match the assignment's example.
