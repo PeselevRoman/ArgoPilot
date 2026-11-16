@@ -11,11 +11,15 @@ Cell = tuple[int, int]
 
 
 def _tenths(value: float) -> int:
-    # For a C# reader: do not write math.floor(value * 10). Floats are binary,
-    # so 0.1 + 0.2 != 0.3 (same as double in C#), and 31.3 * 10 can land just
-    # below 313.0 and floor to 312. Decimal(str(x)) takes the number as typed
-    # and does exact base-10 maths, like C# decimal. ROUND_FLOOR rounds toward
-    # minus infinity, so -0.05 goes to cell -1, not 0.
+    # For a C# reader: floats are binary, like double in C#, so most decimal
+    # fractions are stored a tiny bit off: 0.1 + 0.2 is 0.30000000000000004, and
+    # 4.35 * 100 is 434.99999999999994, which math.floor would turn into 434.
+    # For one-decimal inputs, math.floor(value * 10) happens to give the right
+    # cell (we checked every value from -180.0 to 180.0), but that is luck of the
+    # rounding, not something to rely on. Decimal(str(x)) takes the number as
+    # typed and does exact base-10 maths, like C# decimal, so the result is
+    # right by construction. ROUND_FLOOR rounds toward minus infinity, so
+    # -0.05 goes to cell -1, not 0.
     return int((Decimal(str(value)) * 10).to_integral_value(rounding=ROUND_FLOOR))
 
 
