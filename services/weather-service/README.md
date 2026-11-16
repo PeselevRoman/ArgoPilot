@@ -109,6 +109,10 @@ Open-Meteo's free tier needs no API key. The daily variables used:
 
 The request also sends `forecast_days=9` and `timezone=auto` (so days are local days). The service checks that the answer says `mm` for both variables. These names exist only in `provider.py`; every other file sees plain `date`, `et0_mm` and `rain_mm`. Moving to another provider means rewriting that one file and changing `.env`.
 
+### How long can one request take?
+
+The provider timeout (`PROVIDER_TIMEOUT_SECONDS`) applies to each phase of one call (connect, read, write), not to the whole call. In the worst case a request waits for 1 + `PROVIDER_RETRIES` attempts plus the pauses between them before the service answers with its stale forecast or `503`. A caller (the planner) must set its own timeout longer than that, or it will give up before this service can return its stale answer.
+
 ## Configuration (`.env`)
 
 Read in `config.py` with pydantic-settings. Every variable is required except the API key. `.env` is never committed; `.env.example` has safe values.
@@ -146,7 +150,7 @@ k6 run --summary-export summary.json perf/weather_nfr_2_3.js
 python3 perf/record_weather_results.py summary.json                      # writes perf/results/
 ```
 
-Latest result (2026-11-16): **p95 2.97 ms**, 0.00% failed requests, 602 requests at 10 per second. See `perf/results/2026-11-16T092217Z_weather_v0.1.0.md`. The tooling has its own tests: `services/weather-service/.venv/bin/python -m pytest perf/tests/test_weather_perf.py -q`.
+Latest result (2026-11-16): **p95 2.76 ms**, 0.00% failed requests, 602 requests at 10 per second. See `perf/results/2026-11-16T092844Z_weather_v0.1.0.md`. The tooling has its own tests: `services/weather-service/.venv/bin/python -m pytest perf/tests/test_weather_perf.py -q`.
 
 ## Test
 
