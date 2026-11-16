@@ -71,3 +71,16 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** Share one fetch per cell, including its failure. Labelled as personal judgment.
 - **Decision:** While a fetch for a cell is running, any other request for that cell waits for it instead of starting its own. When the fetch finishes, every waiting request gets the same outcome: a fresh forecast, the stale fallback, or `503`. The retries (1 attempt plus `PROVIDER_RETRIES`) run once for the whole group. A caller that disconnects does not stop the fetch the others are waiting for. The service does not remember failures: after a failed fetch finishes, the next request for that cell tries the provider again.
 - **Why:** Without sharing, 20 requests at an expiry moment would send 20 provider calls, and during an outage 20 separate retry chains. That loads a provider that is already failing, and each waiting request would pay for its own retries. Sharing costs one call, and it makes the answer the same for everyone who asked at the same time. Trade-off: more code and some subtle cases (a caller leaving, a new request arriving just as a fetch ends). They are covered by tests. Not remembering failures means a long outage causes one retry chain per request that arrives after the previous one ends. A short back-off could reduce that, but it is not in the assignment and was left out.
+
+## Every weather-service setting is required in `.env`, except the API key, and is checked at startup
+
+- **Question:** P2 says every value that can change between environments lives in `.env`, and a service must start with a clear error when a required variable is missing. Which settings have defaults in code, and how strictly are the values checked?
+- **Suggested:** No defaults in code except for the API key, which may be empty. Check every value when the service starts. Labelled as personal judgment.
+- **Decision:** `PROVIDER_BASE_URL`, `PROVIDER_TIMEOUT_SECONDS`, `PROVIDER_RETRIES`, `PROVIDER_RETRY_DELAY_SECONDS`, `FRESHNESS_HOURS`, `MAX_STALE_HOURS` and `RETRY_AFTER_SECONDS` have no default in code. `PROVIDER_API_KEY` may be empty, because the free plan needs no key. The service refuses to start, with a message naming the variable, if a value is missing or invalid:
+  - the URL must start with `http://` or `https://`;
+  - timeout must be above 0, retries and delay 0 or more, retry-after above 0;
+  - freshness and the stale limit must be above 0, at most 8760 hours (one year), and the stale limit must not be below freshness;
+  - `nan` and `inf` are refused for every number.
+
+  Other variables in `.env` (for example a later service's) are ignored. `.env.example` lists every variable with a safe example value.
+- **Why:** A default in code hides a choice nobody made, and it could silently differ in production. With none, `.env.example` is the complete list of what the person setting up the service has to decide. `nan` passes "greater than 0" checks (every comparison with `nan` is false), and a huge number of hours would overflow date calculations, so both would start the service and then break every request. Failing at startup finds that at once. Trade-off: slightly more setup for a new developer, who copies `.env.example` to `.env`. The registry follows the same pattern with `DATABASE_URL`.
