@@ -1,5 +1,6 @@
 """Test helpers: a fake Open-Meteo, and a clock a test can move."""
 
+import asyncio
 from datetime import date, datetime, timedelta
 
 import httpx
@@ -67,3 +68,20 @@ class FakeClock:
 
     def advance(self, hours: float = 0, seconds: float = 0) -> None:
         self._now += timedelta(hours=hours, seconds=seconds)
+
+
+class SlowFakeProvider(FakeProvider):
+    """Like FakeProvider, but each answer takes a moment, so concurrent requests really overlap.
+
+    Without the pause, a fake answers before the next request even starts, and a test
+    could pass without any sharing between requests.
+    """
+
+    def __init__(self, *steps, delay: float = 0.02):
+        super().__init__(*steps)
+        self._delay = delay
+        self.transport = httpx.MockTransport(self._handle_slowly)
+
+    async def _handle_slowly(self, request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(self._delay)
+        return self._handle(request)

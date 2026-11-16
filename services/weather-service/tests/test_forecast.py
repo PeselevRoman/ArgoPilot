@@ -1,5 +1,6 @@
 """ForecastService with a fake provider and a clock the test moves."""
 
+import asyncio
 import logging
 from datetime import UTC, date, datetime, timedelta
 
@@ -8,7 +9,7 @@ import pytest
 
 from forecast import ForecastService, ForecastUnavailable
 from tests.conftest import make_settings
-from tests.fakes import FakeClock, FakeProvider, valid_payload
+from tests.fakes import FakeClock, FakeProvider, SlowFakeProvider, valid_payload
 
 START = datetime(2026, 11, 12, 6, 0, tzinfo=UTC)  # local time 08:00, local today is 2026-11-12
 TODAY = date(2026, 11, 12)
@@ -16,8 +17,8 @@ TODAY = date(2026, 11, 12)
 pytestmark = pytest.mark.anyio
 
 
-def build(*steps, **settings):
-    fake = FakeProvider(*steps)
+def build(*steps, slow=False, **settings):
+    fake = (SlowFakeProvider if slow else FakeProvider)(*steps)
     clock = FakeClock(START)
     service = ForecastService(make_settings(**settings), fake.client(), clock.now)
     return service, fake, clock
@@ -195,3 +196,80 @@ async def test_provider_is_asked_for_the_cell_centre_clamped(lat, lon, expected)
 
     params = fake.calls[0].url.params
     assert (params["latitude"], params["longitude"]) == expected
+
+
+# --- one shared fetch per cell ------------------------------------------------
+
+
+async def test_twenty_concurrent_requests_for_one_cell_make_one_provider_call():
+    service, fake, _ = build(valid_payload(TODAY), slow=True)
+
+    results = await asyncio.gather(*(service.get(31.25, 34.79, 7) for _ in range(20)))
+
+    assert len(fake.calls) == 1
+    assert all(result == results[0] for result in results)
+
+
+async def test_concurrent_requests_share_a_failure():
+    service, fake, _ = build(500, slow=True)
+
+    results = await asyncio.gather(
+        *(service.get(31.25, 34.79, 7) for _ in range(20)), return_exceptions=True
+    )
+
+    assert len(fake.calls) == 3  # one retry chain, not twenty
+    assert all(isinstance(result, ForecastUnavailable) for result in results)
+
+
+async def test_concurrent_requests_share_a_stale_answer():
+    service, fake, clock = build(valid_payload(TODAY), 500, slow=True)
+    await service.get(31.25, 34.79, 7)
+    clock.advance(hours=4)
+
+    results = await asyncio.gather(*(service.get(31.25, 34.79, 7) for _ in range(20)))
+
+    assert len(fake.calls) == 1 + 3
+    assert all(result.stale for result in results)
+
+
+async def test_different_cells_fetch_in_parallel():
+    service, fake, _ = build(valid_payload(TODAY), slow=True)
+
+    await asyncio.gather(service.get(31.25, 34.79, 7), service.get(40.25, 10.79, 7))
+
+    assert len(fake.calls) == 2
+
+
+async def test_cancelling_one_caller_does_not_fail_the_others():
+    service, fake, _ = build(valid_payload(TODAY), slow=True)
+    tasks = [asyncio.create_task(service.get(31.25, 34.79, 7)) for _ in range(3)]
+    await asyncio.sleep(0.005)  # all three are now waiting for the provider
+
+    tasks[0].cancel()
+    others = await asyncio.gather(*tasks[1:])
+
+    assert len(fake.calls) == 1
+    assert all(result.stale is False for result in others)
+    assert tasks[0].cancelled()
+
+
+async def test_a_later_request_after_a_failed_round_tries_the_provider_again():
+    service, fake, _ = build(500, slow=True)
+    await asyncio.gather(*(service.get(31.25, 34.79, 7) for _ in range(3)), return_exceptions=True)
+
+    with pytest.raises(ForecastUnavailable):
+        await service.get(31.25, 34.79, 7)
+
+    assert len(fake.calls) == 3 + 3
+
+
+async def test_old_entries_are_purged_when_a_new_one_is_stored():
+    first_day_later = TODAY + timedelta(days=1)
+    service, _, clock = build(valid_payload(TODAY), valid_payload(first_day_later))
+    await service.get(31.25, 34.79, 7)
+    assert service.cache_size == 1
+
+    clock.advance(hours=25)
+    await service.get(40.25, 10.79, 7)
+
+    assert service.cache_size == 1  # the first cell's entry was older than 24 hours

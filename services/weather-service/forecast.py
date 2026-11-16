@@ -39,6 +39,13 @@ class ForecastService:
         self._client = client
         self._clock = clock
         self._cache: dict[Cell, CacheEntry] = {}
+        # One running fetch per cell. Callers that need the same cell wait for it
+        # instead of starting their own (like sharing one Task in C#).
+        self._inflight: dict[Cell, asyncio.Task[CacheEntry | None]] = {}
+
+    @property
+    def cache_size(self) -> int:
+        return len(self._cache)
 
     async def get(self, lat: float, lon: float, days: int) -> ForecastResult:
         cell = cell_of(lat, lon)
@@ -51,7 +58,7 @@ class ForecastService:
             if covered is not None:
                 return ForecastResult(previous.fetched_at, False, covered)
 
-        fetched = await self._fetch_with_retries(cell)
+        fetched = await self._shared_fetch(cell)
         now = self._clock()
         if fetched is not None:
             covered = fetched.cover(now, days)
@@ -65,6 +72,21 @@ class ForecastService:
             if covered is not None:
                 return ForecastResult(previous.fetched_at, True, covered)
         raise ForecastUnavailable("no usable forecast for this cell")
+
+    async def _shared_fetch(self, cell: Cell) -> CacheEntry | None:
+        task = self._inflight.get(cell)
+        if task is None:
+            task = asyncio.create_task(self._fetch_with_retries(cell))
+            self._inflight[cell] = task
+            # Forget the task when it ends, so a later request tries the provider again.
+            task.add_done_callback(lambda done: self._forget(cell, done))
+        # shield: if this caller is cancelled (the client hung up), the fetch the
+        # other callers are waiting for must keep running.
+        return await asyncio.shield(task)
+
+    def _forget(self, cell: Cell, task: "asyncio.Task[CacheEntry | None]") -> None:
+        if self._inflight.get(cell) is task:
+            del self._inflight[cell]
 
     async def _fetch_with_retries(self, cell: Cell) -> CacheEntry | None:
         lat, lon = cell_centre(cell)
@@ -83,6 +105,14 @@ class ForecastService:
                 utc_offset_seconds=result.utc_offset_seconds,
                 days=result.days,
             )
-            self._cache[cell] = entry
+            self._store(cell, entry)
             return entry
         return None
+
+    def _store(self, cell: Cell, entry: CacheEntry) -> None:
+        self._cache[cell] = entry
+        # Drop entries too old to ever be served, so the cache cannot grow forever.
+        limit = timedelta(hours=self._settings.max_stale_hours)
+        for other, old in list(self._cache.items()):
+            if old.age(entry.fetched_at) > limit:
+                del self._cache[other]
