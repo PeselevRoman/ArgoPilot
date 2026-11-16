@@ -50,3 +50,17 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** Always fetch 9 days, whatever was asked. Take "today" from the local time at the point. Labelled as personal judgment.
 - **Decision:** The service always asks the provider for 9 days (`forecast_days=9`) and keeps all of them. The answer takes the next `days` days starting from today and drops days already past. "Today" is the local date at the point: the service asks for `timezone=auto`, keeps the provider's UTC offset with the cached forecast, and works out today from the clock plus that offset, so it also works while the provider is down. A stale forecast that no longer has enough real days from today is not served with fewer days (that would be a shorter answer than asked for). It counts as unusable, and the answer is `503`.
 - **Why:** An entry can be served for up to 24 hours. By then at most one day has passed, so 7 requested plus 1 dropped is 8, and the 9th is a safety margin. Fetching a fixed size means one cache entry serves every `days` value from 1 to 7. Local time is what a grower means by "today", and a UTC date would be a day off for part of the day in many places. Trade-off: the later days of a 9-day forecast are less reliable, but we only return the days that were asked for. The offset is taken from the time of the fetch, so a daylight-saving change within a day could shift "today" by an hour. That is too small to matter here.
+
+## A provider answer must be strictly valid, or it counts as a failure
+
+- **Question:** FR-2.6 lists some provider failures (timeout, error status, a body that is not JSON, a missing field), and FR-2.8 says the service never answers with numbers the provider did not give. What exactly makes a `200` answer unusable?
+- **Suggested:** Check the answer strictly, and treat anything that fails a check as a provider failure, never repairing it. The checks go beyond the assignment's list. Labelled as personal judgment.
+- **Decision:** An answer is used only if all of these hold:
+  - it is a JSON object with the daily dates, ET0 and rain lists, all with exactly 9 entries;
+  - the dates are real ISO dates, one day apart;
+  - every value is a real number: not `null`, text, a boolean, `nan`, `inf` or a number too large to hold, and not negative;
+  - both units say `mm`;
+  - the UTC offset is a whole number within 18 hours of UTC.
+
+  Any failed check is a provider failure: the service retries, then falls back to the stale forecast or answers `503`. It never replaces a bad value with a zero, a default or a neighbouring day.
+- **Why:** A forecast of zeros looks like "no water needed", the worst bug in this system (FR-2.8). A missing number replaced by a zero, or numbers in the wrong unit, would be served as if the provider had given them. The unit and offset checks catch a provider that changes its format quietly, and the offset bound stops a wild value from breaking date calculations later. Trade-off: one bad value among 9 days throws away the whole answer, so a mostly good forecast is refused and we fall back to an older one. Accepting partial answers would be more forgiving but much harder to reason about. There is no upper limit on plausible ET0 or rain values: choosing one is an agronomy decision that needs a cited source.
