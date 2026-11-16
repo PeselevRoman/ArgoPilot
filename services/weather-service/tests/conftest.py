@@ -25,6 +25,11 @@ def clean_settings(monkeypatch, tmp_path):
     config.get_settings.cache_clear()
 
 
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
 def make_settings(**overrides) -> config.Settings:
     # Explicit values and no .env file, so a test controls every setting.
     values = dict(
