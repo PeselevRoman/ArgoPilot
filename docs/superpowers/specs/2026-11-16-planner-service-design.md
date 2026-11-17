@@ -65,12 +65,12 @@ Written in the skill `irrigation-calc-reference`; this section is the summary. A
 
 **One day**, with `Dr_start` carried from the day before:
 1. Rain: `Dr_after_rain = max(0, Dr_start − rain)`. Water above full is lost. All forecast rain counts, with no runoff *(provisional)*.
-2. If `Dr_after_rain + ETc > RAW` the level would fall below the threshold today, so irrigate in the morning: `need_mm = Dr_after_rain` (refill exactly the depletion, never more, Ch. 8 `I ≤ Dr`); `Dr_end = ETc`. Otherwise `need_mm = 0` and `Dr_end = Dr_after_rain + ETc`. Exactly at the threshold does not trigger.
+2. If `Dr_after_rain + ETc > RAW` the level would fall below the threshold today, so irrigate in the morning: `irrigation_mm = Dr_after_rain` (refill exactly the depletion, never more, Ch. 8 `I ≤ Dr`); `Dr_end = ETc`. Otherwise `irrigation_mm = 0` and `Dr_end = Dr_after_rain + ETc`. Exactly at the threshold does not trigger.
 3. `Dr_end` never exceeds `TAW` (Eq. 86). The level reported is `bucket_mm = TAW − Dr_end`. `Dr_end` becomes the next day's `Dr_start`.
 
-**From depth to minutes.** `litres = need_mm × area_m2` (1 mm over 1 m² is 1 litre). Each emitter serves `row_spacing_m × emitter_spacing_m` m² (this layout assumption is the design's own, not FAO-56's; *provisional*), so `run_minutes = need_mm × row_spacing_m × emitter_spacing_m ÷ flow_lph × 60` (the area cancels). No application-efficiency factor *(provisional)*.
+**From depth to minutes.** `litres = irrigation_mm × area_m2` (1 mm over 1 m² is 1 litre). Each emitter serves `row_spacing_m × emitter_spacing_m` m² (not from FAO-56; confirmed by the worked example in `tasks/p2.md`: 1000 m² with 1.5 m rows and 0.4 m emitters gives 1666.7 emitters, and 6900 L at 1.0 L/h takes 248.4 minutes), so `run_minutes = irrigation_mm × row_spacing_m × emitter_spacing_m ÷ flow_lph × 60` (the area cancels). No application-efficiency factor (the example's `litres` is exactly depth × area).
 
-**Rounding.** Everything is computed in full float precision; only the response rounds: 2 decimals for `et0_mm`, `need_mm`, `litres`, `run_minutes`, `bucket_mm`; 3 decimals for `kc`.
+**Rounding.** Everything is computed in full float precision; only the response rounds: 2 decimals for `et0_mm`, `litres`, `run_minutes`, `bucket_mm`; 3 decimals for `kc`. The irrigation depth `irrigation_mm` is internal and is not in the response.
 
 ### Crop table (`crops.py`, *provisional* values, each cited)
 
@@ -89,14 +89,14 @@ Example for the registry's "North block" (tomato, loam: `TAW = 175 × 0.7 = 122.
 {
   "plot_id": "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002",
   "days": [
-    { "date": "2026-11-16", "et0_mm": 2.71, "kc": 0.8, "need_mm": 0.0,
+    { "date": "2026-11-16", "et0_mm": 2.71, "kc": 0.8,
       "litres": 0.0, "run_minutes": 0.0, "stale": false, "bucket_mm": 120.33 },
     "... up to 7 days ..."
   ]
 }
 ```
 
-`need_mm` is the irrigation depth applied that day, 0 on days without irrigation (*provisional*, the instructor's answer may redefine it). `bucket_mm` is the water in the root zone at the end of the day. `run_minutes: 0` means no irrigation. No other fields (CLAUDE.md rule 6).
+`litres` is the water to apply that day (the irrigation depth `irrigation_mm` times the plot area; 0 on days without irrigation). `irrigation_mm` is internal to the engine and is not returned: FR-2.10 no longer lists it. Whether the depth on an irrigation day is the accumulated depletion (our rule) or the day's `ETc` (as in the course's worked example) is *provisional*, pending the instructor's answer. `bucket_mm` is the water in the root zone at the end of the day. `run_minutes: 0` means no irrigation. No other fields (CLAUDE.md rule 6).
 
 ## Configuration (`config.py`, pydantic-settings, `.env`)
 
