@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12+, FastAPI, httpx (`AsyncClient`), pydantic-settings, uvicorn, pytest with the anyio plugin, uv.
 
-**Spec:** `docs/superpowers/specs/2026-11-16-planner-service-design.md`. Requirements: `tasks/p2.md`, "The `planner-service`" (FR-2.9 to FR-2.14, NFR-2.5) and "Global configurations". Domain source: `services/planner-service/docs/research/fao56.md`. Read `docs/judgment-log-p2.md` first. Record decisions only there, and only after the learner confirms wording: stop, propose the entry, wait.
+**Spec:** `docs/superpowers/specs/2026-11-16-planner-service-design.md`. Requirements: `tasks/p2.md`, "The `planner-service`" (FR-2.9 to FR-2.14) and "Global configurations". Domain source: `services/planner-service/docs/research/fao56.md`. Read `docs/judgment-log-p2.md` first. Record decisions only there, and only after the learner confirms wording: stop, propose the entry, wait.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 - Error body: `application/problem+json` with `type`, `title`, `status`, `detail`, `code`. Codes here: `VALIDATION` (422, also 405), `NOT_FOUND` (404), `UPSTREAM_UNAVAILABLE` (503).
 - Never log or print upstream URLs with credentials; log the service name, exception class and HTTP status only.
 - Crop table (`crops.py`, provisional, cited): `tomato`: Kc 0.6 / 1.15 / 0.80, stages 30/40/45/30 days, `Zr` 0.7 m, `p` 0.40. `bell-pepper`: Kc 0.6 / 1.05 / 0.90, stages 30/35/40/20, `Zr` 0.5 m, `p` 0.30.
-- Rounding only in the response: 2 decimals for `et0_mm`, `need_mm`, `litres`, `run_minutes`, `bucket_mm`; 3 for `kc`. Accuracy: within 0.5% of the hand-calculated cases.
+- Rounding only in the response: 2 decimals for `et0_mm`, `need_mm`, `litres`, `run_minutes`, `bucket_mm`; 3 for `kc`. Accuracy: within 0.5% of the hand-calculated cases (our own standard).
 - Every commit message ends with the line `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Work is on branch `p2`. Never push.
 - Tests for each new file; explain each new file to the learner when it is created (CLAUDE.md rule 10).
 
@@ -194,8 +194,7 @@ This task needs the learner. The implementer writes the skill, then stops for th
 
 ## Self-Review
 
-- **Spec coverage:** FR-2.9 and the route (Task 6); FR-2.10 fields and rounding (Tasks 4, 6); FR-2.11 numbers from the skill (Tasks 2, 4); FR-2.12 `422` and `404` (Task 6); FR-2.13 stale per day (Tasks 5, 6); FR-2.14 `503` naming the service, never zeros (Tasks 5, 6); NFR-2.5 accuracy (Tasks 2, 4); config and `.env.example` (Task 1); the skill (Task 2); README, optional diagram, approximations (Task 7); `/health` (Task 6); the crop table with citations (Task 3).
+- **Spec coverage:** FR-2.9 and the route (Task 6); FR-2.10 fields and rounding (Tasks 4, 6); FR-2.11 numbers from the skill (Tasks 2, 4); FR-2.12 `422` and `404` (Task 6); FR-2.13 stale per day (Tasks 5, 6); FR-2.14 `503` naming the service, never zeros (Tasks 5, 6); accuracy against the hand cases, our own 0.5% standard (Tasks 2, 4); config and `.env.example` (Task 1); the skill (Task 2); README, optional diagram, approximations (Task 7); `/health` (Task 6); the crop table with citations (Task 3).
 - **Names:** `Crop`, `CROPS`, `get_crop`, `UnknownCrop`, `PlotInputs`, `ForecastDay`, `PlanDay`, `kc_for`, `plan`, `Upstream`, `UpstreamError`, `PlotNotFound`, `PlotData`, `Forecast`, `FakeUpstreams`, `build_plan`, `PlanOut`, `create_app`, `make_settings` are used the same way wherever they appear.
 - **Not in the plan on purpose:** retries or caching of upstream answers, a performance check, the dual coefficient, an efficiency factor, any `fw` adjustment.
 - **Decisions awaiting the learner's confirmation** (propose wording, wait, then write to `docs/judgment-log-p2.md`): the five listed at the end of the design. Several values are provisional pending the instructor's answers (`docs/p2-planner-questions-for-instructor.md`).
-- **Reminder:** before the end of P2, ask the learner about the missing "Definition of done" check value (NFR-2.5).

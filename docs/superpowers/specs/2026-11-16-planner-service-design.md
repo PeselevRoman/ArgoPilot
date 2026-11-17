@@ -2,7 +2,7 @@
 
 Decisions are recorded only in `docs/judgment-log-p2.md`. This file describes the design and does not restate the reasoning. Already logged: "The planner uses the single crop coefficient (FAO-56 Chapter 6), not the dual one".
 
-Source of requirements: `tasks/p2.md`, section "The `planner-service`" (FR-2.9 to FR-2.14, NFR-2.5) and "Global configurations". Source of domain knowledge: `services/planner-service/docs/research/fao56.md` (FAO-56 Ch. 5, 6, 8, Annex 8; values spot-checked against fao.org on 2026-11-16).
+Source of requirements: `tasks/p2.md`, section "The `planner-service`" (FR-2.9 to FR-2.14) and "Global configurations". Source of domain knowledge: `services/planner-service/docs/research/fao56.md` (FAO-56 Ch. 5, 6, 8, Annex 8; values spot-checked against fao.org on 2026-11-16).
 
 **Provisional defaults.** Several values below are marked *(provisional)*. They are the defaults in `docs/p2-planner-questions-for-instructor.md` and may change when the instructor answers. They are built as single named values so a change is a one-line edit.
 
@@ -14,7 +14,7 @@ Answer "should I water this plot today, and for how many minutes?" for the next 
 
 - `GET /v1/plots/{id}/plan?days={days}` as in FR-2.9 to FR-2.14, with the response below.
 - `GET /health` returning `{"status": "ok"}` (the frontend status line needs it, FR-2.19). It does not call other services.
-- Numbers accurate to within 0.5% of the hand-calculated cases (NFR-2.5).
+- Numbers accurate to within 0.5% of the hand-calculated cases (our own standard; the course's former accuracy requirement, NFR-2.5, was removed from `tasks/p2.md`).
 - When the registry or the weather service fails, a clear `503 UPSTREAM_UNAVAILABLE` naming the service. Never a plan of zeros.
 - The `irrigation-calc-reference` skill: formulas, units, three hand-calculated cases, pointing to `fao56.md`.
 
