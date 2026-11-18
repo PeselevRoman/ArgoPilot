@@ -103,6 +103,8 @@ The soils come from the registry (mm of available water per metre): sand 83, loa
 
 ### Stated approximations
 
+Two of them are rules the grower cannot change today (the bucket starts full, and a plot past its season keeps its last Kc). Ideas for making them configurable are in [`TODO.md`](TODO.md).
+
 The plan is only as good as these assumptions. Each one is also in the skill.
 
 - **A single Kc.** `ETc = Kc x ET0` with one coefficient per day. FAO-56 names the dual coefficient (separate soil evaporation) as better suited to drip; the weather service gives only ET0 and rain, so it is not used.
