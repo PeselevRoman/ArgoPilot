@@ -68,6 +68,7 @@ Every error is `application/problem+json` with a `code`.
 | `422` | `VALIDATION` | `days` is not a whole number from 1 to 7. Also when the plot's crop is not in the planner's crop table. |
 | `404` | `NOT_FOUND` | The plot does not exist (any id the registry does not know, including one that is not a UUID). Also an unknown route. |
 | `503` | `UPSTREAM_UNAVAILABLE` | The registry or the weather service failed, or sent an answer the planner cannot trust. `detail` names the service, for example `weather-service is unavailable: ConnectError`. |
+| `503` | `UNAVAILABLE` | An unexpected internal error. The cause is logged; nothing about it is returned. No `Retry-After`. |
 | `405` | `VALIDATION` | Wrong HTTP method |
 
 The planner never returns a plan built on numbers it did not get: a missing or invalid value from an upstream service is a `503`, never a zero. If both services are down, the registry is reported first.

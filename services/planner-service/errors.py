@@ -3,6 +3,7 @@
 A 503 here always means another AgroPilot service failed, so its code is UPSTREAM_UNAVAILABLE.
 """
 
+import logging
 from http import HTTPStatus
 from typing import Any
 
@@ -12,6 +13,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 PROBLEM_JSON = "application/problem+json"
+
+logger = logging.getLogger(__name__)
 
 # Which spec code goes with each status the service can return.
 CODE_BY_STATUS = {
@@ -52,7 +55,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return problem_response(422, f"{field}: {first['msg']}", "VALIDATION")
 
 
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Log method and path only: never the query string, headers or body. The response carries nothing from exc.
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
+    # Explicit code: UPSTREAM_UNAVAILABLE is only for a failed upstream service.
+    return problem_response(503, "The service hit an unexpected error", "UNAVAILABLE")
+
+
 def add_error_handlers(app: FastAPI) -> None:
     # FastAPI's HTTPException subclasses Starlette's, so one handler covers both.
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    # Anything not handled above. Starlette serves this from its outermost middleware.
+    app.add_exception_handler(Exception, unhandled_exception_handler)
