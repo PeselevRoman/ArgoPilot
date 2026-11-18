@@ -59,6 +59,7 @@ Every error is `application/problem+json` with a `code`.
 | --- | --- | --- |
 | `422` | `VALIDATION` | A parameter is missing, not a number, or out of range (including `nan` and `inf`) |
 | `503` | `UNAVAILABLE` | The provider failed and there is no usable earlier forecast. Has a `Retry-After` header. |
+| `503` | `UNAVAILABLE` | An unexpected internal error. The cause is logged; nothing about it is returned. No `Retry-After`. |
 | `404` | `NOT_FOUND` | Unknown route |
 | `405` | `VALIDATION` | Wrong HTTP method |
 
