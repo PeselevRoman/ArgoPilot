@@ -31,9 +31,18 @@ describe("todaysRecommendation", () => {
     expect(todaysRecommendation(plan(day({ runMinutes: 341.55, litres: 18975 })))).toEqual({
       kind: "water",
       minutes: 342,
+      rounded: true,
       litres: 18975,
       stale: false,
       date: "2026-11-18",
+    });
+  });
+
+  test("a whole number of minutes is not marked as rounded", () => {
+    expect(todaysRecommendation(plan(day({ runMinutes: 10, litres: 100 })))).toMatchObject({
+      kind: "water",
+      minutes: 10,
+      rounded: false,
     });
   });
 

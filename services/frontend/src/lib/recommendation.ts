@@ -1,7 +1,7 @@
 import type { Plan } from "@/lib/types";
 
 export type Recommendation =
-  | { kind: "water"; minutes: number; litres: number; stale: boolean; date: string }
+  | { kind: "water"; minutes: number; rounded: boolean; litres: number; stale: boolean; date: string }
   | { kind: "none"; stale: boolean; date: string };
 
 // Display only: whole minutes, rounded up, so a run above 0 never reads as 0. The planner's
@@ -18,6 +18,8 @@ export function todaysRecommendation(plan: Plan): Recommendation {
     return {
       kind: "water",
       minutes: formatMinutes(today.runMinutes),
+      // True when rounding up changed the number: the headline then says "about".
+      rounded: !Number.isInteger(today.runMinutes),
       litres: today.litres,
       stale: today.stale,
       date: today.date,

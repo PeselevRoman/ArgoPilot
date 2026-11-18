@@ -16,7 +16,7 @@ export function RecommendationCard({ recommendation }: { recommendation: Recomme
     >
       <h2 className="font-heading text-[clamp(2.5rem,12vw,4.5rem)] leading-[1.02] font-extrabold tracking-tight">
         {recommendation.kind === "water"
-          ? `Water for ${recommendation.minutes} ${plural(recommendation.minutes, "minute", "minutes")}`
+          ? `Water for ${recommendation.rounded ? "about " : ""}${recommendation.minutes} ${plural(recommendation.minutes, "minute", "minutes")}`
           : "No irrigation today"}
       </h2>
       <p className="mt-3 text-base">
