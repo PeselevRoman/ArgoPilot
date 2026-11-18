@@ -17,7 +17,7 @@ Colour carries meaning: blue is water to apply, amber is "this number rests on a
 | Dew | `#F4F8F9` | page background | |
 | Ink | `#14262E` | body text, headings | 14.6:1 on Dew |
 | Drip | `#0A6C9B` | the "water" colour: today's slab when watering, markers of irrigation days | 5.4:1 on Dew; white on Drip 5.8:1 |
-| Furrow | `#566B73` | secondary text, labels, rules (rules use Furrow at 30% opacity) | 5.0:1 on Dew |
+| Furrow | `#566B73` | secondary text, labels, rules (rules use Furrow at 30% opacity) | 5.2:1 on Dew |
 | Sun | `#8A5200` on `#FFEFCC` | stale warning text and tint | 5.6:1 |
 | Fault | `#A82018` on `#FDE6E3` | error text and tint | 6.1:1 |
 
