@@ -105,3 +105,31 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** The day it would cross. Labelled as personal judgment.
 - **Decision:** For each day the planner takes the depletion after that morning's rain and adds the day's crop use. If that is above the allowed depletion (strictly above; exactly at it does not irrigate), the plan irrigates that morning for the depletion, and the day ends with only the day's crop use drawn. Rain is applied first, and all forecast rain counts.
 - **Why:** It matches the assignment's example, where day 6 "would drop below half, so you irrigate", and it never lets the crop go below the threshold. Annex 8 irrigates the next morning and accepts a day of mild stress. Trade-off: irrigation comes one day earlier than in Annex 8, so a little more water is used.
+
+## The planner's crop numbers live in a cited Python module
+
+- **Question:** The planner needs numbers per crop (Kc values, stage lengths, root depth, depletion fraction). Where do they live?
+- **Suggested:** A Python module, `crops.py`, with a cited FAO-56 source beside each number. Labelled as personal judgment.
+- **Decision:** The crop table is a Python module of typed, immutable constants. Every number has a comment naming its FAO-56 table, and a value that is a choice rather than a printed number says so. Each value is one named constant, so changing it is a one-line edit. They are not environment variables and not a data file.
+- **Why:** Crop coefficients are domain knowledge that does not change between environments, which is what `.env` is for. A Python module is type-checked, testable, and keeps the citation next to the number. Trade-off: a change means editing code and redeploying, which a data file would avoid. The alternatives were a JSON or YAML file (needs a loader and a validator, awkward for citations) and `.env` variables (over 20 of them, no room for sources).
+
+## The planner uses plain floats and rounds only in the response
+
+- **Question:** Should the engine's arithmetic use `Decimal` or floats, and where does rounding happen?
+- **Suggested:** Floats, with rounding only when the response is built. Labelled as personal judgment.
+- **Decision:** The engine works in full-precision floats and never rounds. The response rounds to 2 decimals for millimetres, litres and minutes, and to 3 for Kc. Rounded values are never fed back into the calculation.
+- **Why:** The calculation is a short chain of multiplications, subtractions and comparisons, and float error is far below any meaningful tolerance. Rounding between days would accumulate error. The weather service needed exact decimals for cell edges, which is a different problem. Trade-off: a comparison exactly at the threshold depends on the float values, so the threshold tests use inputs that are exact in binary.
+
+## An invalid or non-finite upstream answer makes the plan unavailable, never a guess
+
+- **Question:** What does the planner do when the registry or the weather service answers `200` with data it cannot trust?
+- **Suggested:** Treat it as that service being unavailable. Labelled as personal judgment.
+- **Decision:** The planner validates every upstream answer strictly: types, finite numbers, positive where required, and for the forecast exactly the requested number of consecutive days with a boolean `stale`. Anything else is `503 UPSTREAM_UNAVAILABLE` naming the service, and the plan is never padded or defaulted. If the engine produces a non-finite number, the answer is also `503`, with a detail naming both services because the culprit cannot be told.
+- **Why:** A plan of zeros, or a number the engine did not produce, reads as "no water needed". An out-of-range value that produced `null` in the JSON was found in review and is now refused. Trade-off: one bad value among many throws away the whole plan.
+
+## The crop values are our judgment calls, taken from FAO-56 and changeable later
+
+- **Question:** Which values does the planner use for each crop, given that FAO-56 gives ranges and the assignment says to irrigate when the bucket "would fall below half"?
+- **Suggested:** The FAO-56 values, with the lower end of the root depth. Labelled as personal judgment.
+- **Decision:** Tomato: Kc 0.6 / 1.15 / 0.80, stages 30 / 40 / 45 / 30 days, root depth 0.7 m, depletion fraction `p` 0.40. Bell pepper: Kc 0.6 / 1.05 / 0.90, stages 30 / 35 / 40 / 20 days, root depth 0.5 m, `p` 0.30. `p` comes from FAO-56 Table 22, not from the assignment's "half". The climate adjustment of Kc, FAO's ETc adjustment of `p` and the wetted-fraction adjustment are not applied. The instructor said to apply our judgment and that values can be changed later.
+- **Why:** The assignment's "half" is an explanation in "The ideas you need", and FR-2.11 says numbers follow the project skill, which follows FAO-56. The lower root depth is the one FAO-56 recommends for scheduling. Trade-off: the stage lengths are indicative and FAO-56 itself says to use local data, and tomato's `Kc_end` is the middle of a printed range of 0.70 to 0.90.
