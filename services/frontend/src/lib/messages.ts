@@ -38,6 +38,13 @@ export function describeError(error: ServiceError): ErrorMessage {
   if (error.status === 404 && error.code === "NOT_FOUND") {
     return { title: "This plot does not exist", detail: "Check the link, or go back to the list of plots." };
   }
+  if (error.status === 422) {
+    // For example a crop the planner does not know. Trying again will not change that.
+    return {
+      title: "A plan cannot be made for this plot",
+      detail: "The planner does not support this plot's setup, so no plan is shown.",
+    };
+  }
   if (error.code === "UPSTREAM_UNAVAILABLE") {
     const named = namedUpstreams(error.detail);
     if (named.length === 0) {

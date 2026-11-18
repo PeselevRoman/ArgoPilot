@@ -54,12 +54,21 @@ describe("getConfig", () => {
 });
 
 describe("register (runs when the server starts)", () => {
-  test("throws when a variable is missing, so a bad configuration stops the start", async () => {
+  test("a bad configuration prints the message naming the variable and exits the process", async () => {
     setEnv({ PLANNER_URL: undefined });
-    await expect(register()).rejects.toThrow("PLANNER_URL");
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await register();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("PLANNER_URL"));
+    expect(exit).toHaveBeenCalledWith(1);
+    exit.mockRestore();
+    log.mockRestore();
   });
 
   test("does nothing when the configuration is valid", async () => {
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
     await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
+    exit.mockRestore();
   });
 });

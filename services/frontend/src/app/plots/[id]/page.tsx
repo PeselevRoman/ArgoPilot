@@ -4,12 +4,22 @@ import { PlanList } from "@/components/plan-list";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { cropLabel, formatNumber } from "@/lib/format";
 import { describeError } from "@/lib/messages";
+import { decodePlotId } from "@/lib/plot-id";
 import { getPlan } from "@/lib/planner";
 import { todaysRecommendation } from "@/lib/recommendation";
 import { getPlot } from "@/lib/registry";
 
 async function PlotContent({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = decodePlotId(rawId);
+  if (id === null) {
+    return (
+      <ErrorNotice
+        message={describeError({ service: "planner-service", kind: "problem", status: 404, code: "NOT_FOUND" })}
+        backHref="/"
+      />
+    );
+  }
   // The plot (for its name) and the plan are asked at the same time.
   const [plotResult, planResult] = await Promise.all([getPlot(id), getPlan(id)]);
   const plot = plotResult.ok ? plotResult.data : null;

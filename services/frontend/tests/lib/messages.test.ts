@@ -62,9 +62,14 @@ describe("describeError", () => {
     expect(m.title).toBe("The planner sent an answer this app cannot use");
   });
 
+  test("a 422 means this plot cannot be planned, and does not say to try again", () => {
+    const m = describeError(err({ status: 422, code: "VALIDATION" }));
+    expect(m.title).toBe("A plan cannot be made for this plot");
+    expect(`${m.title} ${m.detail}`).not.toMatch(/try again/i);
+  });
+
   test.each([
     [{ status: 503, code: "UNAVAILABLE" }],
-    [{ status: 422, code: "VALIDATION" }],
     [{ status: 500 }],
     [{ status: 502, code: "SOMETHING_NEW" }],
   ])("any other problem %j is the generic message naming the planner", (over) => {

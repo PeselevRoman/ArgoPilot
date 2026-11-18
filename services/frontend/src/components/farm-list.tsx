@@ -4,8 +4,21 @@ import type { FarmWithPlots } from "@/lib/types";
 
 // Each farm is a heading and its plots are the list under it: that is the content's structure.
 export function FarmList({ farms, unassignedPlots }: { farms: FarmWithPlots[]; unassignedPlots: number }) {
+  const note =
+    unassignedPlots > 0 ? (
+      <p className="text-sm text-muted-foreground">
+        {unassignedPlots === 1
+          ? "1 plot is not shown because its farm is not in the list."
+          : `${unassignedPlots} plots are not shown because their farm is not in the list.`}
+      </p>
+    ) : null;
   if (farms.length === 0) {
-    return <p className="text-base">No farms yet</p>;
+    return (
+      <div className="space-y-4">
+        <p className="text-base">No farms yet</p>
+        {note}
+      </div>
+    );
   }
   return (
     <div className="space-y-8">
@@ -28,11 +41,7 @@ export function FarmList({ farms, unassignedPlots }: { farms: FarmWithPlots[]; u
           )}
         </section>
       ))}
-      {unassignedPlots > 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {unassignedPlots} {unassignedPlots === 1 ? "plot is" : "plots are"} not shown because the farm it belongs to is not in the list.
-        </p>
-      ) : null}
+      {note}
     </div>
   );
 }

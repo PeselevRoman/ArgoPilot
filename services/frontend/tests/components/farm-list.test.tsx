@@ -46,3 +46,25 @@ test("no note when every plot has a farm", () => {
   render(<FarmList farms={farms} unassignedPlots={0} />);
   expect(screen.queryByText(/not shown/)).not.toBeInTheDocument();
 });
+
+test("a plot id with a reserved character is encoded once in the link", () => {
+  const odd: FarmWithPlots[] = [
+    { farm: { id: "f1", name: "North farm" }, plots: [plot("a b/c", "Odd plot")] },
+  ];
+  render(<FarmList farms={odd} unassignedPlots={0} />);
+  expect(screen.getByRole("link", { name: /Odd plot/ })).toHaveAttribute("href", "/plots/a%20b%2Fc");
+});
+
+// Plots must never vanish unnoticed, even when the farm list is empty.
+test("with no farms but unassigned plots, the note is still shown", () => {
+  render(<FarmList farms={[]} unassignedPlots={2} />);
+  expect(screen.getByText("No farms yet")).toBeInTheDocument();
+  expect(screen.getByText(/2 plots are not shown/)).toBeInTheDocument();
+});
+
+test("the note reads correctly for one plot and for several", () => {
+  const { rerender } = render(<FarmList farms={farms} unassignedPlots={1} />);
+  expect(screen.getByText("1 plot is not shown because its farm is not in the list.")).toBeInTheDocument();
+  rerender(<FarmList farms={farms} unassignedPlots={3} />);
+  expect(screen.getByText("3 plots are not shown because their farm is not in the list.")).toBeInTheDocument();
+});

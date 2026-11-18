@@ -40,6 +40,11 @@ describe("parsePlan", () => {
     ["a number is null", { ...plan, days: [{ ...day, kc: null }] }],
     ["a number is NaN", { ...plan, days: [{ ...day, et0_mm: NaN }] }],
     ["a number is Infinity", { ...plan, days: [{ ...day, run_minutes: Infinity }] }],
+    ["run_minutes is negative", { ...plan, days: [{ ...day, run_minutes: -5 }] }],
+    ["litres is negative", { ...plan, days: [{ ...day, litres: -5 }] }],
+    ["et0_mm is negative", { ...plan, days: [{ ...day, et0_mm: -0.1 }] }],
+    ["kc is negative", { ...plan, days: [{ ...day, kc: -1 }] }],
+    ["bucket_mm is negative", { ...plan, days: [{ ...day, bucket_mm: -1 }] }],
   ])("returns null when %s", (_name, input) => {
     expect(parsePlan(input)).toBeNull();
   });
@@ -86,6 +91,12 @@ describe("parsePlots / parsePlot", () => {
   });
   test("return null for a non-finite area", () => {
     expect(parsePlot({ ...plot, area_m2: Infinity })).toBeNull();
+  });
+  test.each([0, -10])("return null when the area is %d", (area) => {
+    expect(parsePlot({ ...plot, area_m2: area })).toBeNull();
+  });
+  test("a day with zero values is valid (no irrigation)", () => {
+    expect(parsePlan({ plot_id: "p1", days: [{ ...day, litres: 0, run_minutes: 0, et0_mm: 0, bucket_mm: 0 }] })).not.toBeNull();
   });
   test("parsePlots returns null when it is not an array", () => {
     expect(parsePlots(plot)).toBeNull();
