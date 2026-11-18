@@ -1,6 +1,7 @@
 """The crop table: FAO-56 values for the crops the planner knows.
 
-All values here are provisional, pending the instructor's answers.
+These values are our judgment calls (the instructor said to apply judgment and that
+values can be changed later). Each one that is a choice, not a printed number, says so.
 Not applied (documented approximations): the climate adjustment of Kc mid and
 Kc end (needs wind and humidity), and FAO's ETc adjustment of p.
 Sources are in docs/research/fao56.md (sections 2.1 to 2.3).

@@ -90,14 +90,14 @@ For each day of the forecast, in order. The formulas and their FAO-56 equations 
 
 ### The crop table
 
-The planner knows two crops, the ones in the registry's sample data. The values are in `crops.py`, each with its FAO-56 table and a note when it is a choice rather than a printed value. **All of them are provisional, pending the instructor's answers** (`docs/p2-planner-questions-for-instructor.md`).
+The planner knows two crops, the ones in the registry's sample data. The values are in `crops.py`, each with its FAO-56 table and a note when it is a choice rather than a printed value. These are our judgment calls, and they can be changed later: each is one named value.
 
 | Crop | `Kc ini` | `Kc mid` | `Kc end` | Stage days (ini / dev / mid / late) | Root depth | `p` |
 | --- | --- | --- | --- | --- | --- | --- |
 | `tomato` | 0.6 | 1.15 | 0.80 | 30 / 40 / 45 / 30 | 0.7 m | 0.40 |
 | `bell-pepper` | 0.6 | 1.05 | 0.90 | 30 / 35 / 40 / 20 | 0.5 m | 0.30 |
 
-Provisional choices, not printed values: `Kc ini` 0.6 is the Solanum group row (the tomato and pepper rows are blank); tomato `Kc end` 0.80 is the middle of the printed range 0.70-0.90; the pepper initial stage is printed "25/30" and read as 30; both root depths are the lower end of the printed range (FAO-56 notes that smaller values suit scheduling). Printed values: `Kc mid`, pepper `Kc end`, the other stage lengths and `p`.
+Choices that are not printed values: `Kc ini` 0.6 is the Solanum group row (the tomato and pepper rows are blank); tomato `Kc end` 0.80 is the middle of the printed range 0.70-0.90; the pepper initial stage is printed "25/30" and read as 30; both root depths are the lower end of the printed range (FAO-56 notes that smaller values suit scheduling). Printed values: `Kc mid`, pepper `Kc end`, the other stage lengths and `p`.
 
 The soils come from the registry (mm of available water per metre): sand 83, loam 175, clay-loam 200.
 
@@ -186,7 +186,7 @@ Read in `config.py` with pydantic-settings. Every variable is required. `.env` i
 | `main.py` | The app, `/health` and the plan route |
 | `planner.py` | Fetches the plot, soil, emitter and forecast, runs the engine, builds the response (rounding) |
 | `engine.py` | The irrigation calculation (pure functions; no network, no clock) |
-| `crops.py` | The crop table (provisional values with their FAO-56 sources) |
+| `crops.py` | The crop table (values with their FAO-56 sources) |
 | `upstream.py` | The clients for the registry and the weather service, with strict checks of every field |
 | `config.py` | Settings from `.env` |
 | `errors.py` | Turns every error into `application/problem+json` |

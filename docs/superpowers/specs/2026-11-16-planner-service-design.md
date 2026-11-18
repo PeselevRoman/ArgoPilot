@@ -4,7 +4,7 @@ Decisions are recorded only in `docs/judgment-log-p2.md`. This file describes th
 
 Source of requirements: `tasks/p2.md`, section "The `planner-service`" (FR-2.9 to FR-2.14) and "Global configurations". Source of domain knowledge: `services/planner-service/docs/research/fao56.md` (FAO-56 Ch. 5, 6, 8, Annex 8; values spot-checked against fao.org on 2026-11-16).
 
-**Provisional defaults.** Several values below are marked *(provisional)*. They are the defaults in `docs/p2-planner-questions-for-instructor.md` and may change when the instructor answers. They are built as single named values so a change is a one-line edit.
+**Judgment calls.** Several values below are marked *(our judgment)*. The instructor said to apply our judgment and that these can be changed later. They are built as single named values so a change is a one-line edit. Two of them are rules rather than values and are out of scope to make configurable now: see `services/planner-service/TODO.md`.
 
 ## Intent
 
@@ -57,14 +57,14 @@ Written in the skill `irrigation-calc-reference`; this section is the summary. A
 
 **Inputs.** From the crop table (`crops.py`): `Kc_ini`, `Kc_mid`, `Kc_end`, stage lengths `L_ini`, `L_dev`, `L_mid`, `L_late` (days), root depth `Zr` (m), depletion fraction `p`. From the plot and its soil and emitter: `planting_date`, area, spacings, `soil_mm_per_m`, `flow_lph`. From the forecast, per day: date, `ET0`, `rain`, stale flag.
 
-**Kc for a date** (FAO-56 Ch. 6, Eq. 66, single coefficient). `i = (date − planting_date) in days + 1`, never less than 1. Constant `Kc_ini` while `i ≤ L_ini`; straight line from `Kc_ini` to `Kc_mid` across the development stage; constant `Kc_mid` through the mid stage; straight line from `Kc_mid` to `Kc_end` across the late stage; `Kc_end` for every later day (a plot past its season keeps the last Kc, *provisional*). No climate adjustment of `Kc_mid` and `Kc_end` (needs wind and humidity), and no wetted-fraction adjustment of `Kc_ini` *(provisional)*; both are documented approximations.
+**Kc for a date** (FAO-56 Ch. 6, Eq. 66, single coefficient). `i = (date − planting_date) in days + 1`, never less than 1. Constant `Kc_ini` while `i ≤ L_ini`; straight line from `Kc_ini` to `Kc_mid` across the development stage; constant `Kc_mid` through the mid stage; straight line from `Kc_mid` to `Kc_end` across the late stage; `Kc_end` for every later day (a plot past its season keeps the last Kc, *provisional*). No climate adjustment of `Kc_mid` and `Kc_end` (needs wind and humidity), and no wetted-fraction adjustment of `Kc_ini` *(our judgment)*; both are documented approximations.
 
 **Crop water use.** `ETc = Kc × ET0` (Ch. 5, Eq. 56).
 
-**The bucket** (Ch. 8, Eq. 82, 83, 85). `TAW = soil_mm_per_m × Zr` (mm). `RAW = p × TAW`. The state is the depletion `Dr` (mm below full). Day 1 starts with `Dr = 0` *(provisional)*.
+**The bucket** (Ch. 8, Eq. 82, 83, 85). `TAW = soil_mm_per_m × Zr` (mm). `RAW = p × TAW`. The state is the depletion `Dr` (mm below full). Day 1 starts with `Dr = 0` *(our judgment)*.
 
 **One day**, with `Dr_start` carried from the day before:
-1. Rain: `Dr_after_rain = max(0, Dr_start − rain)`. Water above full is lost. All forecast rain counts, with no runoff *(provisional)*.
+1. Rain: `Dr_after_rain = max(0, Dr_start − rain)`. Water above full is lost. All forecast rain counts, with no runoff *(our judgment)*.
 2. If `Dr_after_rain + ETc > RAW` the level would fall below the threshold today, so irrigate in the morning: `irrigation_mm = Dr_after_rain` (refill exactly the depletion, never more, Ch. 8 `I ≤ Dr`); `Dr_end = ETc`. Otherwise `irrigation_mm = 0` and `Dr_end = Dr_after_rain + ETc`. Exactly at the threshold does not trigger.
 3. `Dr_end` never exceeds `TAW` (Eq. 86). The level reported is `bucket_mm = TAW − Dr_end`. `Dr_end` becomes the next day's `Dr_start`.
 
@@ -72,7 +72,7 @@ Written in the skill `irrigation-calc-reference`; this section is the summary. A
 
 **Rounding.** Everything is computed in full float precision; only the response rounds: 2 decimals for `et0_mm`, `litres`, `run_minutes`, `bucket_mm`; 3 decimals for `kc`. The irrigation depth `irrigation_mm` is internal and is not in the response.
 
-### Crop table (`crops.py`, *provisional* values, each cited)
+### Crop table (`crops.py`, our judgment, each value cited)
 
 | | `Kc_ini` | `Kc_mid` | `Kc_end` | stages (days) | `Zr` | `p` |
 |---|---|---|---|---|---|---|
@@ -96,7 +96,7 @@ Example for the registry's "North block" (tomato, loam: `TAW = 175 × 0.7 = 122.
 }
 ```
 
-`litres` is the water to apply that day (the irrigation depth `irrigation_mm` times the plot area; 0 on days without irrigation). `irrigation_mm` is internal to the engine and is not returned: FR-2.10 no longer lists it. Whether the depth on an irrigation day is the accumulated depletion (our rule) or the day's `ETc` (as in the course's worked example) is *provisional*, pending the instructor's answer. `bucket_mm` is the water in the root zone at the end of the day. `run_minutes: 0` means no irrigation. No other fields (CLAUDE.md rule 6).
+`litres` is the water to apply that day (the irrigation depth `irrigation_mm` times the plot area; 0 on days without irrigation). `irrigation_mm` is internal to the engine and is not returned: FR-2.10 no longer lists it. Whether the depth on an irrigation day is the accumulated depletion (our rule) or the day's `ETc` (as in the course's worked example) is our judgment (logged in `docs/judgment-log-p2.md`). `bucket_mm` is the water in the root zone at the end of the day. `run_minutes: 0` means no irrigation. No other fields (CLAUDE.md rule 6).
 
 ## Configuration (`config.py`, pydantic-settings, `.env`)
 
@@ -141,4 +141,4 @@ Names inside the files, the `detail` wording, how to share the HTTP client, the 
 2. Floats throughout, rounding only in the response (2 decimals for mm, litres and minutes; 3 for Kc).
 3. The daily rule: irrigate on the morning of day D when the level would fall below the threshold that day, refilling exactly the depletion at that moment; the bucket starts full; rain counts fully.
 4. The planner treats any invalid upstream answer as that service being unavailable, and never pads a missing forecast day.
-5. The provisional crop values and their sources (after the instructor answers).
+5. The crop values and their sources (our judgment, changeable later).

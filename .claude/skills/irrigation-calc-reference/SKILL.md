@@ -7,7 +7,7 @@ description: Use when writing, changing, reviewing or testing the irrigation num
 
 The single source of the planner's formulas. `services/planner-service/engine.py` follows this file, and every irrigation number in a plan comes from that engine. No AI model computes or adjusts an irrigation number (CLAUDE.md rule 12).
 
-The research behind it, with the FAO-56 chapter or table for every claim, is `services/planner-service/docs/research/fao56.md`. The crop numbers are in `services/planner-service/crops.py` (provisional, pending the instructor's answers). FAO-56 means FAO Irrigation and Drainage Paper 56 (Allen et al., 1998).
+The research behind it, with the FAO-56 chapter or table for every claim, is `services/planner-service/docs/research/fao56.md`. The crop numbers are in `services/planner-service/crops.py` (our judgment calls; they can be changed later). FAO-56 means FAO Irrigation and Drainage Paper 56 (Allen et al., 1998).
 
 ## Method: single crop coefficient
 
@@ -74,7 +74,7 @@ Each emitter serves `row_spacing_m × emitter_spacing_m` m². So `run_minutes = 
 - `Zr` is fixed for the whole season; FAO's adjustment of `p` for ETc and for soil texture is not applied.
 - Each emitter serves `row_spacing × emitter_spacing` m². This is not from FAO-56; the course's worked example confirms it (1000 m², rows 1.5 m, emitters 0.4 m, 1.0 L/h, 6900 L → 248 minutes).
 
-## Crop values (provisional; `crops.py` is the source of truth)
+## Crop values (our judgment calls; `crops.py` is the source of truth)
 
 | Crop | `Kc_ini` | `Kc_mid` | `Kc_end` | Stage days (ini / dev / mid / late) | `Zr` | `p` |
 |---|---|---|---|---|---|---|
