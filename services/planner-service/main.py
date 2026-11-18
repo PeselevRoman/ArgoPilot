@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 import config
 from config import Settings
 from errors import add_error_handlers
-from planner import PlanOut, build_plan
+from planner import PlanNotFinite, PlanOut, build_plan
 from upstream import PlotNotFound, Upstream, UpstreamError
 
 
@@ -45,6 +45,11 @@ def create_app(
             return await build_plan(request.app.state.upstream, plot_id, days)
         except PlotNotFound:
             raise HTTPException(status_code=404, detail="Plot not found") from None
+        except PlanNotFinite:
+            raise HTTPException(
+                status_code=503,
+                detail="The plan could not be calculated: a value from registry-service or weather-service is out of range",
+            ) from None
         except UpstreamError as error:
             raise HTTPException(status_code=503, detail=str(error)) from None
 

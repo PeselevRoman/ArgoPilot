@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from main import create_app
 from tests.conftest import SETTING_VARIABLES, make_settings
-from tests.fakes import PLOT_ID, FakeUpstreams, forecast_json
+from tests.fakes import PLOT_ID, FakeUpstreams, emitter_json, forecast_json, plot_json, soil_json
 
 START = date(2026, 11, 16)
 URL = f"/v1/plots/{PLOT_ID}/plan"
@@ -172,3 +172,38 @@ def test_app_refuses_to_start_without_settings(monkeypatch):
     with pytest.raises(RuntimeError, match="REGISTRY_URL"):
         with TestClient(create_app()):
             pass
+
+
+def irrigating_plan(make_client, **steps):
+    # A small bucket (sand) and a high ET0 make the plan irrigate inside 7 days.
+    return make_client(soil=soil_json(20), forecast=forecast_json(START, et0=10.0), **steps)
+
+
+def test_normal_irrigating_plan_has_only_finite_numbers(make_client):
+    client, _ = irrigating_plan(make_client)
+    response = client.get(URL)
+    assert response.status_code == 200
+    days = response.json()["days"]
+    assert any(day["litres"] > 0 for day in days)
+    for day in days:
+        for field in ("et0_mm", "kc", "litres", "run_minutes", "bucket_mm"):
+            assert isinstance(day[field], (int, float))  # null would be None
+
+
+@pytest.mark.parametrize(
+    "steps",
+    [
+        {"emitter": emitter_json(5e-324)},
+        {"plot": plot_json(row_spacing_m=1e200, emitter_spacing_m=1e200)},
+    ],
+    ids=["tiny-flow", "huge-spacings"],
+)
+def test_non_finite_plan_is_503_upstream_unavailable_problem_json(make_client, steps):
+    client, _ = irrigating_plan(make_client, **steps)
+    response = client.get(URL)
+    assert response.status_code == 503
+    assert response.headers["content-type"].startswith("application/problem+json")
+    body = response.json()
+    assert body["code"] == "UPSTREAM_UNAVAILABLE"
+    assert "days" not in body
+    assert "registry-service or weather-service" in body["detail"]

@@ -166,7 +166,7 @@ sequenceDiagram
 
 - The plot's crop must be in the crop table, or the answer is `422`.
 - The planner does not retry and does not cache: a failure is reported at once. The weather service already retries its provider and can answer with a stale forecast.
-- Each call has its own timeout. `WEATHER_TIMEOUT_SECONDS` must be longer than the weather service's worst case (one provider attempt plus its retries and the pauses between them; see "How long can one request take?" in the [weather README](../weather-service/README.md)), or the planner gives up before the weather service can return its stale answer.
+- Each call has its own timeout. `WEATHER_TIMEOUT_SECONDS` must be longer than the weather service's worst case (`(1 + retries) x (provider timeout per phase x slow phases) + retries x retry delay`, which is `3 x (5 x 2) + 2 x 0.5`, about 31 s, with the weather service's example values, with two slow phases (connect and read) per attempt; so the planner's value must be larger, 45 here; see "How long can one request take?" in the [weather README](../weather-service/README.md)), or the planner gives up before the weather service can return its stale answer.
 
 ## Configuration (`.env`)
 
@@ -177,7 +177,7 @@ Read in `config.py` with pydantic-settings. Every variable is required. `.env` i
 | `REGISTRY_URL` | Base URL of registry-service | `http://127.0.0.1:8000` |
 | `WEATHER_URL` | Base URL of weather-service | `http://127.0.0.1:8001` |
 | `REGISTRY_TIMEOUT_SECONDS` | Timeout for one registry call | `5` |
-| `WEATHER_TIMEOUT_SECONDS` | Timeout for the weather call; must exceed the weather service's worst case | `30` |
+| `WEATHER_TIMEOUT_SECONDS` | Timeout for the weather call; must exceed the weather service's worst case | `45` |
 
 ## Files
 

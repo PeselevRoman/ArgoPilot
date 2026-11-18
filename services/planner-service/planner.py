@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime
+import math
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -9,6 +10,10 @@ from pydantic import BaseModel
 from crops import UnknownCrop, get_crop
 from engine import PlotInputs, plan
 from upstream import Upstream
+
+
+class PlanNotFinite(Exception):
+    """The engine produced a number that is not finite (inf or nan): never answer it as a plan."""
 
 
 class PlanDayOut(BaseModel):
@@ -45,6 +50,8 @@ async def build_plan(upstream: Upstream, plot_id: str, days: int) -> PlanOut:
         upstream.get_forecast(plot.lat, plot.lon, days),
         return_exceptions=True,
     )
+    # Trade-off: a fast failure (for example the soil call) still waits for the slowest call, up to
+    # the weather timeout. Accepted, to keep the error order deterministic.
     # Re-raise in a fixed order (soil, emitter, forecast): the registry is reported before the
     # weather service, whatever finished first.
     for result in results:
@@ -61,6 +68,13 @@ async def build_plan(upstream: Upstream, plot_id: str, days: int) -> PlanOut:
         emitter_flow_lph=flow_lph,
         soil_mm_per_m=soil_mm_per_m,
     )
+    plan_days = plan(inputs, forecast.days)
+    # A finite but absurd registry value can make the engine produce inf; pydantic would
+    # serialise it as null (a 200 that reads as "don't water"). Refuse it instead.
+    for day in plan_days:
+        numbers = (day.et0_mm, day.kc, day.irrigation_mm, day.litres, day.run_minutes, day.bucket_mm)
+        if not all(math.isfinite(number) for number in numbers):
+            raise PlanNotFinite
     # Rounding happens only here, for display; the engine's state stays unrounded.
     return PlanOut(
         plot_id=plot_id,
@@ -74,6 +88,6 @@ async def build_plan(upstream: Upstream, plot_id: str, days: int) -> PlanOut:
                 stale=day.stale,
                 bucket_mm=round(day.bucket_mm, 2),
             )
-            for day in plan(inputs, forecast.days)
+            for day in plan_days
         ],
     )

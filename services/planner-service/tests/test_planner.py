@@ -1,12 +1,13 @@
 """build_plan with fake upstreams: the order of calls, rounding and error reporting."""
 
+import math
 from datetime import date
 
 import pytest
 from fastapi import HTTPException
 
-from planner import build_plan
-from tests.fakes import PLOT_ID, FakeUpstreams, forecast_json, plot_json
+from planner import PlanNotFinite, build_plan
+from tests.fakes import PLOT_ID, FakeUpstreams, emitter_json, forecast_json, plot_json, soil_json
 from upstream import Upstream, UpstreamError
 
 pytestmark = pytest.mark.anyio
@@ -82,3 +83,35 @@ async def test_registry_failure_is_reported_before_weather_failure():
     with pytest.raises(UpstreamError) as caught:
         await build_plan(upstream, PLOT_ID, 7)
     assert "registry-service" in str(caught.value)
+
+
+# A small bucket (sand, 20 mm per metre) and a high ET0 make the plan irrigate inside 7 days.
+def irrigating(**steps):
+    return make(soil=soil_json(20), forecast=forecast_json(START, et0=10.0), **steps)
+
+
+def all_numbers_finite(result) -> bool:
+    return all(
+        math.isfinite(value)
+        for day in result.days
+        for value in (day.et0_mm, day.kc, day.litres, day.run_minutes, day.bucket_mm)
+    )
+
+
+async def test_normal_irrigating_plan_is_finite():
+    _, upstream = irrigating()
+    result = await build_plan(upstream, PLOT_ID, 7)
+    assert any(day.litres > 0 for day in result.days)
+    assert all_numbers_finite(result)
+
+
+async def test_tiny_emitter_flow_raises_plan_not_finite():
+    _, upstream = irrigating(emitter=emitter_json(5e-324))
+    with pytest.raises(PlanNotFinite):
+        await build_plan(upstream, PLOT_ID, 7)
+
+
+async def test_huge_spacings_raise_plan_not_finite():
+    _, upstream = irrigating(plot=plot_json(row_spacing_m=1e200, emitter_spacing_m=1e200))
+    with pytest.raises(PlanNotFinite):
+        await build_plan(upstream, PLOT_ID, 7)
