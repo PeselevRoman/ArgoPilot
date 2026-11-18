@@ -13,3 +13,19 @@ export type ServiceError = {
 
 // Like a C# result type: either the data, or the error, never a thrown exception.
 export type Result<T> = { ok: true; data: T } | { ok: false; error: ServiceError };
+
+// What the frontend shows. camelCase here, snake_case in the services' JSON (parse.ts converts).
+export type Farm = { id: string; name: string };
+export type Plot = { id: string; farmId: string; name: string; cropId: string; areaM2: number };
+export type FarmWithPlots = { farm: Farm; plots: Plot[] };
+
+export type PlanDay = {
+  date: string; // YYYY-MM-DD
+  et0Mm: number;
+  kc: number;
+  litres: number;
+  runMinutes: number;
+  stale: boolean;
+  bucketMm: number;
+};
+export type Plan = { plotId: string; days: PlanDay[] };
