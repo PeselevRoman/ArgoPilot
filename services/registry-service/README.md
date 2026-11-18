@@ -152,6 +152,7 @@ Every error response uses `application/problem+json` and has a `code` field.
 | `409` | `CONFLICT` | A plot name is already used on the same farm, or a farm with plots is deleted |
 | `405` | `VALIDATION` | The HTTP method is not allowed on that route. The `Allow` header lists the allowed methods. |
 | `503` | `UNAVAILABLE` | The service cannot connect to the database: the SQLite file is missing, or PostgreSQL is unreachable. The response includes `Retry-After: 5`. The cause is logged. |
+| `503` | `UNAVAILABLE` | An unexpected internal error. The cause is logged; nothing about it is returned. No `Retry-After`. |
 
 The `title` in each error follows the standard reason phrase for its status, for example "Unprocessable Content" for `422`.
 
