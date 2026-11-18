@@ -91,3 +91,17 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** The single coefficient: ETc = Kc × ET0, with Kc following the FAO-56 curve for the growth stage. Labelled as personal judgment.
 - **Decision:** The planner uses the single crop coefficient from Chapter 6, with Kc values and stage lengths for tomato and bell pepper. Chapter 7 (the dual method, soil-evaporation layer) is out of scope. The README and the `irrigation-calc-reference` skill state that this is an approximation, and that FAO-56 names the dual method as better suited to drip.
 - **Why:** `weather-service` provides only ET0 and rain, the assignment describes Kc as a factor on ET0, and FAO-56 accepts the single coefficient for results of this kind. Trade-off: the later stages have no drip-specific correction, so the plan can be less accurate for drip than a dual-method plan.
+
+## On an irrigation day the planner refills the accumulated depletion
+
+- **Question:** The course's worked example shows `litres` equal to one day's crop use (6.9 mm × 1000 m² = 6900 L). The assignment also says to irrigate when the bucket "would fall below half". On a day when the threshold is crossed, how much water does the plan apply?
+- **Suggested:** Refill the bucket to full before that day's crop use, which can be several days of use. Labelled as personal judgment.
+- **Decision:** `litres` is the accumulated depletion (after the day's rain) times the plot area, and never more, so nothing is wasted. The crop's use that day then draws the bucket down again. The depth is not returned; only `litres` and `run_minutes` are. The instructor said to apply our judgment.
+- **Why:** Applying only the day's use would leave the bucket draining after each irrigation, so it would cross the threshold again the next day. Refilling matches FAO-56's rule that the net irrigation depth is at most the depletion (Chapter 8) and the assignment's bucket example, where day 6 irrigates 35 mm, not 7 mm. Trade-off: it does not reproduce the worked example's 6900 L on a day when the depletion is larger. It does reproduce the example's emitter arithmetic.
+
+## An irrigation is decided on the level at the end of that day, and counts that morning
+
+- **Question:** On which day does an irrigation happen: the morning after the level has already crossed the threshold (FAO-56 Annex 8), or the day it would cross?
+- **Suggested:** The day it would cross. Labelled as personal judgment.
+- **Decision:** For each day the planner takes the depletion after that morning's rain and adds the day's crop use. If that is above the allowed depletion (strictly above; exactly at it does not irrigate), the plan irrigates that morning for the depletion, and the day ends with only the day's crop use drawn. Rain is applied first, and all forecast rain counts.
+- **Why:** It matches the assignment's example, where day 6 "would drop below half, so you irrigate", and it never lets the crop go below the threshold. Annex 8 irrigates the next morning and accepts a day of mild stress. Trade-off: irrigation comes one day earlier than in Annex 8, so a little more water is used.
