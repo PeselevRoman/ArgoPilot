@@ -130,3 +130,12 @@ I checked the plan against the skill's list of common generated-page defaults, a
 - Use shadcn `Button` for the back link and the retry button. Everything else is plain elements with Tailwind classes. Add no other shadcn component unless a test needs it.
 - Day labels come from the date string only (never the server clock): "Today" for the first day, "Tomorrow" for the second, then weekday, day and month. Format with `Intl.DateTimeFormat` using `timeZone: "UTC"` on the parsed date, so no day shifts.
 - The status line uses text ("up", "down", "checking") plus a shape (a filled circle for up, a cross for down, a hollow circle for checking), never colour alone.
+
+## Amendment (2026-11-20): what is clickable and what is not
+
+The first build made the blue answer panel look like a button, and the real links look like plain text. Changes, made with the `frontend-design` skill and approved by the learner:
+
+- **One look for everything you can press, used for nothing else.** Ink (`--primary`, `#14262E`): filled with white text for an action ("Try again"), an outlined white group with a chevron on each row to go somewhere (the plots), underlined with a chevron for a link ("Back to all plots"). Pressed and hovered rows use `--pressed` (`#DCE8EC`).
+- **Blue means water only.** `--water` (`#0A6C9B`) is used by the answer panel and the irrigation markers, not by links, buttons, the focus outline or the status dots. The focus outline is now Ink.
+- **Passive things stay flat:** farm names, plan rows, the status line (the "up" dot is Ink), and the answer panel (no border, shadow or chevron).
+- **The wordmark is plain text.** A "Back to all plots" link at the top of the plot page replaces it, and the red error panel has no button of its own.

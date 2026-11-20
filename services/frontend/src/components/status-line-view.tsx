@@ -17,7 +17,7 @@ export function StatusLineView({ statuses }: { statuses: ServiceStatus[] | null 
       ) : (
         statuses.map(({ service, up }) => (
           <span key={service} className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className={up ? "text-primary" : "font-bold text-destructive"}>
+            <span aria-hidden="true" className={up ? "text-foreground" : "font-bold text-destructive"}>
               {up ? "●" : "✕"}
             </span>
             <span>{SHORT[service]}</span>

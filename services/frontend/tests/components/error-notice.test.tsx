@@ -15,9 +15,10 @@ test("is announced to assistive technology", () => {
   expect(screen.getByRole("alert")).toBeInTheDocument();
 });
 
-test("shows a link back when backHref is set, and none otherwise", () => {
-  const { rerender } = render(<ErrorNotice message={message} backHref="/" />);
-  expect(screen.getByRole("link", { name: "Back to all plots" })).toHaveAttribute("href", "/");
-  rerender(<ErrorNotice message={message} />);
+// The way back is the "Back to all plots" link at the top of the plot page, so the notice has no
+// second button: one place, one name.
+test("has no link or button of its own", () => {
+  render(<ErrorNotice message={message} />);
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });

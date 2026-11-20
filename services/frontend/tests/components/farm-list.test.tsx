@@ -68,3 +68,23 @@ test("the note reads correctly for one plot and for several", () => {
   rerender(<FarmList farms={farms} unassignedPlots={3} />);
   expect(screen.getByText("3 plots are not shown because their farm is not in the list.")).toBeInTheDocument();
 });
+
+// Interactive things look interactive: a chevron on every plot row, and nothing else has one.
+test("every plot link ends with a chevron that screen readers skip", () => {
+  render(<FarmList farms={farms} unassignedPlots={0} />);
+  for (const link of screen.getAllByRole("link")) {
+    expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  }
+});
+
+test("farm names and the empty-farm text are not links", () => {
+  render(<FarmList farms={farms} unassignedPlots={0} />);
+  expect(screen.queryByRole("link", { name: "North farm" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "South farm" })).not.toBeInTheDocument();
+  expect(screen.getAllByRole("link")).toHaveLength(2);
+});
+
+test("a farm's plots are one list", () => {
+  render(<FarmList farms={farms} unassignedPlots={0} />);
+  expect(within(screen.getByRole("list")).getAllByRole("listitem")).toHaveLength(2);
+});

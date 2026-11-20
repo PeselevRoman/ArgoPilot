@@ -10,7 +10,7 @@ export function RecommendationCard({ recommendation }: { recommendation: Recomme
     <section
       className={
         water
-          ? "rounded-lg bg-primary p-5 text-primary-foreground"
+          ? "rounded-lg bg-water p-5 text-white"
           : "rounded-lg border-2 border-muted-foreground/40 p-5"
       }
     >

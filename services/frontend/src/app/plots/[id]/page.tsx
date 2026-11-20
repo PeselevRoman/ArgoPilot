@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { BackLink } from "@/components/back-link";
 import { ErrorNotice } from "@/components/error-notice";
 import { PlanList } from "@/components/plan-list";
 import { RecommendationCard } from "@/components/recommendation-card";
@@ -14,10 +15,12 @@ async function PlotContent({ params }: { params: Promise<{ id: string }> }) {
   const id = decodePlotId(rawId);
   if (id === null) {
     return (
-      <ErrorNotice
-        message={describeError({ service: "planner-service", kind: "problem", status: 404, code: "NOT_FOUND" })}
-        backHref="/"
-      />
+      <>
+        <BackLink />
+        <ErrorNotice
+          message={describeError({ service: "planner-service", kind: "problem", status: 404, code: "NOT_FOUND" })}
+        />
+      </>
     );
   }
   // The plot (for its name) and the plan are asked at the same time.
@@ -26,6 +29,7 @@ async function PlotContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <>
+      <BackLink />
       <h1 className="font-heading text-3xl font-bold">{plot ? plot.name : "Plot"}</h1>
       {plot ? (
         <p className="mt-1 mb-5 text-muted-foreground">
@@ -43,7 +47,7 @@ async function PlotContent({ params }: { params: Promise<{ id: string }> }) {
           <PlanList days={planResult.data.days} />
         </>
       ) : (
-        <ErrorNotice message={describeError(planResult.error)} backHref="/" />
+        <ErrorNotice message={describeError(planResult.error)} />
       )}
     </>
   );

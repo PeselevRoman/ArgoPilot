@@ -3,8 +3,10 @@
 @import "shadcn/tailwind.css";
 
 /* Colours and fonts follow docs/superpowers/specs/2026-11-18-frontend-visual-design.md.
-   Blue (--primary) means water to apply, amber (--stale) an old forecast, red (--destructive) a
-   failure. Light theme only: a grower in the sun needs it. */
+   Blue (--water) means water to apply and nothing else. Anything you can press is Ink
+   (--primary): filled for an action, outlined with a chevron to go somewhere, underlined for a
+   link. Amber (--stale) is an old forecast, red (--destructive) a failure. Light theme only: a
+   grower in the sun needs it. */
 
 @theme inline {
   --color-background: var(--background);
@@ -14,6 +16,8 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-water: var(--water);
+  --color-pressed: var(--pressed);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -40,12 +44,14 @@
   color-scheme: light;
   --background: #f4f8f9; /* Dew */
   --foreground: #14262e; /* Ink */
-  --card: #f4f8f9;
+  --card: #ffffff; /* the fill of things you can press */
   --card-foreground: #14262e;
   --popover: #f4f8f9;
   --popover-foreground: #14262e;
-  --primary: #0a6c9b; /* Drip */
+  --primary: #14262e; /* Ink: pressable things */
   --primary-foreground: #ffffff;
+  --water: #0a6c9b; /* Drip: water, and nothing else */
+  --pressed: #dce8ec; /* a pressable thing while it is pressed or hovered */
   --secondary: #e6eef1;
   --secondary-foreground: #14262e;
   --muted: #e6eef1;
@@ -58,7 +64,7 @@
   --stale-tint: #ffefcc;
   --border: rgb(86 107 115 / 0.3); /* Furrow at 30% */
   --input: rgb(86 107 115 / 0.3);
-  --ring: #0a6c9b;
+  --ring: #14262e;
   --radius: 0.375rem;
 }
 
@@ -75,7 +81,7 @@
   h3 {
     @apply font-heading;
   }
-  /* Visible keyboard focus: a 3 px water-blue outline with an offset. */
+  /* Visible keyboard focus: a 3 px Ink outline with an offset. */
   :focus-visible {
     outline: 3px solid var(--ring);
     outline-offset: 3px;

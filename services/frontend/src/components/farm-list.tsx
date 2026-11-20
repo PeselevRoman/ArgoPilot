@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Chevron } from "@/components/chevron";
 import { cropLabel } from "@/lib/format";
 import type { FarmWithPlots } from "@/lib/types";
 
@@ -24,16 +25,24 @@ export function FarmList({ farms, unassignedPlots }: { farms: FarmWithPlots[]; u
     <div className="space-y-8">
       {farms.map(({ farm, plots }) => (
         <section key={farm.id}>
-          <h2 className="border-b border-border pb-2 font-heading text-2xl font-bold">{farm.name}</h2>
+          <h2 className="font-heading text-2xl font-bold">{farm.name}</h2>
           {plots.length === 0 ? (
             <p className="py-3 text-muted-foreground">No plots yet</p>
           ) : (
-            <ul>
+            // One outlined, white group per farm. The border, the chevron and the pressed colour
+            // say "you can press these"; the farm name above is flat text.
+            <ul className="mt-3 overflow-hidden rounded-lg border-[1.5px] border-foreground bg-card">
               {plots.map((plot) => (
-                <li key={plot.id} className="border-b border-border">
-                  <Link href={`/plots/${encodeURIComponent(plot.id)}`} className="flex min-h-12 items-center justify-between gap-4 py-3">
+                <li key={plot.id} className="border-b border-border last:border-b-0">
+                  <Link
+                    href={`/plots/${encodeURIComponent(plot.id)}`}
+                    className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 hover:bg-pressed active:bg-pressed"
+                  >
                     <span className="text-lg font-bold">{plot.name}</span>
-                    <span className="text-muted-foreground">{cropLabel(plot.cropId)}</span>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      {cropLabel(plot.cropId)}
+                      <Chevron className="text-foreground" />
+                    </span>
                   </Link>
                 </li>
               ))}

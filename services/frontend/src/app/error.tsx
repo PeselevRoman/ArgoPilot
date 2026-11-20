@@ -9,7 +9,7 @@ export default function ErrorPage({ reset }: { error: Error; reset: () => void }
     <section role="alert" className="rounded-lg bg-fault-tint p-5 text-destructive">
       <h1 className="font-heading text-2xl font-bold">This page could not be shown</h1>
       <p className="mt-2 text-base">Something went wrong while drawing it. Try again in a few minutes.</p>
-      <Button variant="outline" className="mt-4 h-12 px-4 text-base text-foreground" onClick={reset}>
+      <Button className="mt-4 h-12 px-5 text-base font-bold" onClick={reset}>
         Try again
       </Button>
     </section>

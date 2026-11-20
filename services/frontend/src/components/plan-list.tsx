@@ -25,7 +25,7 @@ export function PlanList({ days }: { days: PlanDay[] }) {
               aria-hidden="true"
               className={
                 water
-                  ? "absolute top-5 -left-[9px] size-4 rounded-full bg-primary"
+                  ? "absolute top-5 -left-[9px] size-4 rounded-full bg-water"
                   : "absolute top-5 -left-[9px] size-4 rounded-full border-2 border-muted-foreground bg-background"
               }
             />
