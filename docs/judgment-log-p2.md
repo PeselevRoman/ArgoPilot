@@ -147,3 +147,10 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** Whole minutes. First suggested rounding to the nearest minute, never below 1. Labelled as personal judgment.
 - **Decision:** The headline shows whole minutes, rounded up. A run above 0 is never shown as 0, and the crop never gets less than the planned time. This is display formatting only: the planner's numbers are not changed, and the plan list shows `litres` as the planner gave them. The learner chose rounding up.
 - **Why:** A grower sets a timer in whole minutes, and rounding up keeps "Water for 1 minute" for a run of 0.3. Trade-off: the headline can be up to one minute longer than the planned run, which is under 1% of a typical run. `CLAUDE.md` rule 12 says no model adjusts irrigation numbers; this is a display rule, and it is logged so it stays visible.
+
+## The frontend's headline says "about" when the minutes were rounded up
+
+- **Question:** The headline shows whole minutes rounded up ("Water for 342 minutes"), but the plan list shows the planner's exact minutes for the same day ("341.55 minutes"). A grower sees two numbers for one day. How do the two agree?
+- **Suggested:** Either round the list too, or label the headline. Labelled as personal judgment.
+- **Decision:** The headline says "about" when rounding changed the number ("Water for about 342 minutes"). A whole number of minutes from the planner has no "about". The plan list still shows the planner's exact minutes. The learner chose this. It adds to the entry "The frontend's headline shows whole minutes, rounded up", which stays as written.
+- **Why:** "About" makes the headline agree with the list instead of contradicting it, and the list stays the planner's numbers as given. Trade-off: "about" is vaguer than a number, but it never contradicts the list.
