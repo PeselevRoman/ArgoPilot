@@ -154,3 +154,45 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** Either round the list too, or label the headline. Labelled as personal judgment.
 - **Decision:** The headline says "about" when rounding changed the number ("Water for about 342 minutes"). A whole number of minutes from the planner has no "about". The plan list still shows the planner's exact minutes. The learner chose this. It adds to the entry "The frontend's headline shows whole minutes, rounded up", which stays as written.
 - **Why:** "About" makes the headline agree with the list instead of contradicting it, and the list stays the planner's numbers as given. Trade-off: "about" is vaguer than a number, but it never contradicts the list.
+
+## The frontend calls the services only from the server, and has a fourth setting
+
+- **Question:** The spec says the browser never calls a service and lists three URLs for `.env.local`. How does the frontend fetch data, and how is a hung service handled?
+- **Suggested:** Server-side fetching in `src/lib/`, with a request timeout in the configuration. Labelled as personal judgment.
+- **Decision:** The browser never calls a service. Pages fetch on the server, and every call lives in `src/lib/`. The URLs come from `REGISTRY_URL`, `WEATHER_URL` and `PLANNER_URL`. A fourth variable, `REQUEST_TIMEOUT_MS`, bounds every call. The app refuses to start, with a message naming the variable, if any of the four is missing or invalid.
+- **Why:** The spec requires server-side calls, and says every value that can change is configuration. Without a timeout, a hung service means a blank page. Trade-off: one variable beyond the spec's three.
+
+## The frontend does not cache, and the status line loads on its own
+
+- **Question:** How fresh is the data, and does a slow service delay the page?
+- **Suggested:** No caching, and a separate loading boundary for the status line. Labelled as personal judgment.
+- **Decision:** Every page load asks the services again, with no caching. The status line sits in its own `Suspense` boundary, so a slow service never delays the page. The framework's Cache Components setting is kept, with `connection()` marking work that must happen at request time.
+- **Why:** A plan changes daily and a status line must be live. Trade-off: every page costs three to five service calls, which is fine at this size.
+
+## An invalid answer from a service counts as that service being down
+
+- **Question:** What does the frontend do with a `200` answer it cannot trust?
+- **Suggested:** Treat it as that service being unavailable, as the planner does with its own upstreams. Labelled as personal judgment.
+- **Decision:** `src/lib` accepts an answer only if its shape is right: required fields, correct types, finite numbers, no negative plan values, a positive plot area and at least one plan day. Anything else is shown as that service being unavailable, never repaired. An empty plan is never read as "no irrigation".
+- **Why:** The same rule the planner applies to its own upstreams. A plan of zeros reads as "no water needed". A negative value was found in review and is now refused. Trade-off: one bad value throws away the whole plan.
+
+## The plan list shows every day, including today, with `bucket_mm`
+
+- **Question:** Which days and which numbers does the plan list show?
+- **Suggested:** All days from the planner, with ET0, Kc and the soil water level. Labelled as personal judgment.
+- **Decision:** The 7-day list includes today, and each day shows ET0, Kc and the soil water level (`bucket_mm`) as the planner gave them, with at most 3 decimals shown to hide float noise. `bucket_mm` is shown for now. The learner will decide after seeing it on different devices whether to remove it.
+- **Why:** FR-2.16 says "the 7-day plan", and without today's row the bucket and ET0 for today would be hidden. Trade-off: today appears twice, in the headline and in the first row.
+
+## Plan errors are explained by what the grower can do
+
+- **Question:** How does the frontend word an error from the planner?
+- **Suggested:** Plain words naming the failed service, with no technical detail. Labelled as personal judgment.
+- **Decision:** A planner `503 UPSTREAM_UNAVAILABLE` is rewritten in plain words naming the service ("The weather service is not available"), and the technical `detail` is never shown. A `404` says the plot does not exist. A `422` says a plan cannot be made for this plot, with no "try again". Every other failure, including a timeout, says the plan is not available right now or that the service is not responding. The wording lives in one file, `messages.ts`.
+- **Why:** FR-2.18 requires the user to see what happened, not a blank page or a stack trace. Telling someone to retry something that will never work misleads them.
+
+## Everything you can press shares one look, and blue means water only
+
+- **Question:** The first build made the blue answer panel look like a button, and the real links look like plain text. How does the interface show what is clickable?
+- **Suggested:** One look for all pressable things, used for nothing else. Labelled as personal judgment.
+- **Decision:** A filled Ink button is an action ("Try again"). An outlined white group with a chevron on each row goes somewhere (the plots). An underlined link with a chevron is a link ("Back to all plots"). Blue (`--water`) is used only for water: the answer panel and the irrigation markers. The wordmark is plain text, and the red error panel has no button of its own.
+- **Why:** A phone has no hover, so underlines and outlines carry the signal. Trade-off: links are not blue, which departs from the web convention, and the underline carries the meaning instead.
