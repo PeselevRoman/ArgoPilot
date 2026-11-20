@@ -23,9 +23,10 @@ export function dayLabel(date: string, index: number): { label: string; date: st
   return { label: formatted, date: formatted };
 }
 
-// 18975 -> "18,975"; 341.55 -> "341.55"
+// 18975 -> "18,975"; 341.55 -> "341.55". The planner sends at most 3 decimals (kc), so showing up
+// to 3 loses nothing it said, and hides float noise like 115.49000000000001.
 export function formatNumber(value: number): string {
-  return value.toLocaleString("en-GB", { maximumFractionDigits: 20 });
+  return value.toLocaleString("en-GB", { maximumFractionDigits: 3 });
 }
 
 export function plural(count: number, one: string, many: string): string {

@@ -27,13 +27,17 @@ test.each([
   [341.55, "341.55"],
   [0, "0"],
   [0.8, "0.8"],
-])("formatNumber(%d) is %s and never rounds", (value, text) => {
+])("formatNumber(%d) is %s", (value, text) => {
   expect(formatNumber(value)).toBe(text);
 });
 
-test("formatNumber keeps every decimal the planner gave", () => {
+// The planner rounds to 2 decimals (3 for kc). Float noise such as 115.49000000000001 must not
+// reach the screen, and no real decimal of the planner may be lost.
+test("formatNumber keeps the planner's decimals (up to 3) and drops float noise", () => {
   expect(formatNumber(120.29)).toBe("120.29");
-  expect(formatNumber(0.123456)).toBe("0.123456");
+  expect(formatNumber(0.857)).toBe("0.857");
+  expect(formatNumber(115.49000000000001)).toBe("115.49");
+  expect(formatNumber(110.69000000000001)).toBe("110.69");
 });
 
 test("plural", () => {
