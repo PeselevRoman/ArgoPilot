@@ -216,7 +216,7 @@ Latest runs, p95 at 10 requests per second (limit 100 ms):
 | `GET /v1/plots` (list, 10,000 rows) | 86.56 ms | 83.50 ms |
 | `GET /v1/plots/{id}` | 6.51 ms | 7.62 ms |
 
-All ten routes passed on PostgreSQL, with 0.00% failed requests. The list of plots is the slowest route on both engines and has about 16% headroom. See `perf/results/2026-11-15T152751Z_v0.1.0.md`.
+All ten routes passed on PostgreSQL, with 0.00% failed requests. The list of plots is the slowest route on both engines and has about 18% headroom (81.6 ms against the 100 ms target). See `perf/results/2026-11-21T173455Z_v0.1.0.md`, measured on the code of 2026-11-21 (commit `2233b76`). The earlier run, `2026-11-15T152751Z_v0.1.0.md`, gave 83.5 ms.
 
 ## Layout
 
