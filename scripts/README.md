@@ -15,11 +15,14 @@ Logs and full test output go to `scripts/.logs/` (not committed).
 
 ## PostgreSQL tests
 
-`check.sh` also runs the registry's PostgreSQL tests when `TEST_DATABASE_URL` is set. They drop the tables of that database, so the script refuses any database whose name does not contain `test` (for example `registry_test`). Put the URL in your shell, or in `~/.agropilot-env` outside the repository (the scripts read it and never print it):
+`check.sh` also runs the registry's PostgreSQL tests when `TEST_DATABASE_URL` is set. They drop the tables of that database, so the script refuses any database whose name does not contain `test` (for example `registry_test`). Put the URL in your shell, or in `~/.agropilot-env` outside the repository (the scripts read it and never print it). Run `chmod 600 ~/.agropilot-env` so only you can read it.
 
 ```bash
-TEST_DATABASE_URL=postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry_test
+TEST_DATABASE_URL='postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry_test'
+PERF_DATABASE_URL='postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry_perf'
 ```
+
+The file is read by bash, so **keep the single quotes**: without them a password with `&`, `;`, `$`, `!` or a space breaks the line. A password with `@`, `:`, `/`, `#`, `?` or `%` must also be percent-encoded inside the URL (`@` becomes `%40`). If the registry suite shows "password authentication failed", the URL in the file differs from the one that works in your shell.
 
 ## Tests of the scripts
 
