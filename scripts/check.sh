@@ -31,6 +31,8 @@ run_suite frontend-types "$ROOT/services/frontend" npx tsc --noEmit
 if [ "${1:-}" != "--no-build" ]; then
   run_suite frontend-build "$ROOT/services/frontend" npm run build
 fi
+# The demo stand-in's tests (Node's own test runner, no extra package).
+run_suite demo-stubs "$ROOT" node --test scripts/demo/stubs.test.mjs
 # The scripts' own tests, with the registry's Python.
 run_suite scripts "$ROOT" "$ROOT/services/registry-service/.venv/bin/python" -m pytest -q scripts/tests
 
