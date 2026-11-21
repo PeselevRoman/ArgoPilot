@@ -31,12 +31,12 @@ def bash(code: str, env: dict[str, str] | None = None, timeout: int = 30):
     )
 
 
-@pytest.mark.parametrize("name", ["lib.sh", "dev.sh", "check.sh"])
+@pytest.mark.parametrize("name", ["lib.sh", "dev.sh", "check.sh", "demo.sh"])
 def test_script_has_valid_syntax(name):
     assert subprocess.run(["bash", "-n", str(SCRIPTS / name)]).returncode == 0
 
 
-@pytest.mark.parametrize("name", ["dev.sh", "check.sh"])
+@pytest.mark.parametrize("name", ["dev.sh", "check.sh", "demo.sh"])
 def test_script_is_executable(name):
     assert os.access(SCRIPTS / name, os.X_OK)
 
@@ -204,3 +204,82 @@ def test_dev_check_names_a_port_that_is_already_in_use():
         server.close()
     assert result.returncode == 1
     assert str(port) in result.stdout + result.stderr
+
+
+# --- start, stop_all and wait_or_stop (shared by dev.sh and demo.sh) -----------------------------
+
+
+def test_stop_all_stops_a_started_process_and_what_it_started(tmp_path):
+    (tmp_path / "sub").mkdir()
+    child = tmp_path / "sub" / "child.sh"
+    child.write_text("#!/usr/bin/env bash\nsleep 61.7 &\nwait\n")
+    child.chmod(0o755)
+    result = bash(
+        f'ROOT="{tmp_path}"; LOG_DIR="{tmp_path}/logs"; '
+        f'start sleeper sub ./child.sh; pid="${{PIDS[0]}}"; '
+        'kill -0 "$pid" && echo started; sleep 0.5; '
+        'stop_all >/dev/null; sleep 0.5; '
+        'kill -0 "$pid" 2>/dev/null && echo still-running || echo stopped'
+    )
+    assert result.stdout.split() == ["started", "stopped"]
+    # The sleep that child.sh started is gone too (its own process group was stopped).
+    assert subprocess.run(["pgrep", "-f", "sleep 61.7"], capture_output=True).returncode == 1
+
+
+def test_start_writes_the_output_of_the_process_to_its_log(tmp_path):
+    (tmp_path / "sub").mkdir()
+    result = bash(
+        f'ROOT="{tmp_path}"; LOG_DIR="{tmp_path}/logs"; '
+        'start talker sub echo hello-from-the-process; wait; cat "$LOG_DIR/talker.log"'
+    )
+    assert "hello-from-the-process" in result.stdout
+
+
+def test_wait_or_stop_exits_with_the_log_tail_when_the_url_never_answers(tmp_path):
+    free = socket.socket()
+    free.bind(("127.0.0.1", 0))
+    port = free.getsockname()[1]
+    free.close()
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "dead.log").write_text("it crashed: boom\n")
+    result = bash(f'LOG_DIR="{tmp_path}/logs"; wait_or_stop dead http://127.0.0.1:{port}/ 1')
+    assert result.returncode == 1
+    assert "did not answer" in result.stdout
+    assert "it crashed: boom" in result.stdout
+
+
+# --- demo.sh --check -----------------------------------------------------------------------------
+
+
+def test_demo_check_names_a_port_that_is_already_in_use():
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen()
+    port = server.getsockname()[1]
+    try:
+        result = subprocess.run(
+            [str(SCRIPTS / "demo.sh"), "--check"],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "DEMO_PORTS": str(port)},
+            timeout=30,
+        )
+    finally:
+        server.close()
+    assert result.returncode == 1
+    assert str(port) in result.stdout + result.stderr
+
+
+def test_demo_check_passes_when_the_ports_are_free():
+    free = socket.socket()
+    free.bind(("127.0.0.1", 0))
+    port = free.getsockname()[1]
+    free.close()
+    result = subprocess.run(
+        [str(SCRIPTS / "demo.sh"), "--check"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "DEMO_PORTS": str(port)},
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

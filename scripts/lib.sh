@@ -99,3 +99,47 @@ print_summary() {
   fi
   return 0
 }
+
+# --- starting and stopping processes (dev.sh and demo.sh) -------------------------------------
+
+ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PIDS=()
+STOPPING=0
+
+# start NAME DIR COMMAND...: run COMMAND in $ROOT/DIR in the background, with its output in
+# $LOG_DIR/NAME.log. It gets its own process group, so stopping it also stops what it started
+# (uv starts python, npm starts node).
+start() {
+  local name="$1" dir="$2"
+  shift 2
+  mkdir -p "$LOG_DIR"
+  (cd "$ROOT/$dir" && exec setsid "$@") >"$LOG_DIR/$name.log" 2>&1 &
+  PIDS+=("$!")
+}
+
+# Stop everything start() started. Safe to call twice (Ctrl+C, then the exit trap).
+stop_all() {
+  [ "$STOPPING" -eq 0 ] || return 0
+  STOPPING=1
+  echo
+  echo "Stopping..."
+  local pid
+  for pid in "${PIDS[@]}"; do
+    kill -TERM -- "-$pid" 2>/dev/null
+  done
+  wait 2>/dev/null
+}
+
+# wait_or_stop NAME URL SECONDS: say "up" when URL answers. If it does not, show the end of the
+# process's log and exit 1 (the caller's exit trap then stops everything).
+wait_or_stop() {
+  local name="$1" url="$2" seconds="$3"
+  echo -n "Waiting for $name... "
+  if wait_for_http "$url" "$seconds"; then
+    echo "up"
+  else
+    echo "did not answer within ${seconds}s. Last lines of $LOG_DIR/$name.log:"
+    tail -n 8 "$LOG_DIR/$name.log" | sed 's/^/    /'
+    exit 1
+  fi
+}

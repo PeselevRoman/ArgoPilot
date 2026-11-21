@@ -16,7 +16,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 load_user_env
 
 PORTS="${DEV_PORTS:-8000 8001 8002 3000}"
-PIDS=()
 
 # Check everything that would stop the start, and report all of it at once.
 check_prerequisites() {
@@ -48,29 +47,6 @@ check_prerequisites() {
   return "$problems"
 }
 
-# Start one process in its own process group, so that stopping it also stops what it started
-# (uv starts python, npm starts node).
-start() {
-  local name="$1" dir="$2"
-  shift 2
-  mkdir -p "$LOG_DIR"
-  (cd "$ROOT/$dir" && exec setsid "$@") >"$LOG_DIR/$name.log" 2>&1 &
-  PIDS+=("$!")
-}
-
-STOPPING=0
-stop_all() {
-  [ "$STOPPING" -eq 0 ] || return 0
-  STOPPING=1
-  echo
-  echo "Stopping..."
-  local pid
-  for pid in "${PIDS[@]}"; do
-    kill -TERM -- "-$pid" 2>/dev/null
-  done
-  wait 2>/dev/null
-}
-
 if ! check_prerequisites; then
   exit 1
 fi
@@ -89,17 +65,6 @@ start frontend services/frontend npm run dev
 
 # Each service must answer /health before we say it is running. The frontend's first page is
 # compiled on the first request, so it gets more time.
-wait_or_stop() {
-  local name="$1" url="$2" seconds="$3"
-  echo -n "Waiting for $name... "
-  if wait_for_http "$url" "$seconds"; then
-    echo "up"
-  else
-    echo "did not answer within ${seconds}s. Last lines of $LOG_DIR/$name.log:"
-    tail -n 8 "$LOG_DIR/$name.log" | sed 's/^/    /'
-    exit 1
-  fi
-}
 wait_or_stop registry http://127.0.0.1:8000/health 60
 wait_or_stop weather http://127.0.0.1:8001/health 60
 wait_or_stop planner http://127.0.0.1:8002/health 60
