@@ -151,7 +151,7 @@ k6 run --summary-export summary.json perf/weather_nfr_2_3.js
 python3 perf/record_weather_results.py summary.json                      # writes perf/results/
 ```
 
-Latest result (2026-11-16): **p95 2.76 ms**, 0.00% failed requests, 602 requests at 10 per second. See `perf/results/2026-11-16T092844Z_weather_v0.1.0.md`. The tooling has its own tests: `services/weather-service/.venv/bin/python -m pytest perf/tests/test_weather_perf.py -q`.
+Latest result (2026-11-21, commit `46b693d`): **p95 2.32 ms**, 0.00% failed requests. See `perf/results/2026-11-21T193539Z_weather_v0.1.0.md`. The first run (2026-11-16, `perf/results/2026-11-16T092844Z_weather_v0.1.0.md`) gave 2.76 ms. The tooling has its own tests: `services/weather-service/.venv/bin/python -m pytest perf/tests/test_weather_perf.py -q`.
 
 ## Test
 
