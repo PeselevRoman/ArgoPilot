@@ -54,6 +54,17 @@ describe("getConfig", () => {
 });
 
 describe("register (runs when the server starts)", () => {
+  beforeEach(() => vi.stubEnv("NEXT_RUNTIME", "nodejs"));
+
+  test("in the edge runtime it does nothing (process.exit does not exist there)", async () => {
+    vi.stubEnv("NEXT_RUNTIME", "edge");
+    setEnv({ PLANNER_URL: undefined });
+    const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    await register();
+    expect(exit).not.toHaveBeenCalled();
+    exit.mockRestore();
+  });
+
   test("a bad configuration prints the message naming the variable and exits the process", async () => {
     setEnv({ PLANNER_URL: undefined });
     const exit = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);

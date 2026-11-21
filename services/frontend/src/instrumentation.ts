@@ -1,12 +1,9 @@
-import { getConfig } from "@/lib/config";
-
 // Next.js calls register() once when the server starts. A bad .env.local must stop the app here,
-// not on the first request: print the message (it names the variable) and exit.
+// not on the first request. The check lives in its own file and is loaded only for the Node.js
+// runtime, because it uses process.exit.
 export async function register(): Promise<void> {
-  try {
-    getConfig();
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { checkConfigOrExit } = await import("@/instrumentation-node");
+    checkConfigOrExit();
   }
 }
