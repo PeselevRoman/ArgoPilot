@@ -217,3 +217,24 @@ Decisions for the second assignment (`tasks/p2.md`). Decisions from P1 are in [`
 - **Suggested:** Turn the generation off in the Next.js configuration. Labelled as personal judgment.
 - **Decision:** The frontend sets `agentRules: false` in `next.config.ts`, and the generated file is deleted. `next dev` no longer writes it (checked).
 - **Why:** The file is written by the framework, not by us, and it reappears on every dev run, so the tree is never clean. The project's own agent instructions are in `CLAUDE.md` and the skills. Trade-off: an agent working in the frontend does not get Next.js's pointer to the version-matched docs in `node_modules/next/dist/docs/` unless it looks for them.
+
+## The weather service retries twice, then falls back to the stale forecast, then refuses
+
+- **Question:** When Open-Meteo fails, how hard does weather-service try, how long does it wait, and what does the caller get at the end?
+- **Suggested:** A bounded retry, then the stale fallback, then `503` with `Retry-After`. Labelled as personal judgment. Retrying with a fixed delay is industry consensus; the specific numbers are personal judgment.
+- **Decision:** Each provider call times out after 5 s (`PROVIDER_TIMEOUT_SECONDS`). A failed call is retried twice, 0.5 s apart (`PROVIDER_RETRIES`, `PROVIDER_RETRY_DELAY_SECONDS`). If all three attempts fail, the service serves the stale forecast if one exists and is at most 24 hours old. Otherwise it answers `503`, `code` `UNAVAILABLE`, with `Retry-After: 60` (`RETRY_AFTER_SECONDS`). The worst case for one request is about 16 s: three 5 s attempts plus two 0.5 s waits.
+- **Why:** Short outages and single dropped requests are common, so a couple of quick retries hide them. Many retries would hold the caller's request open. A fixed delay is simpler than exponential back-off, and the shared fetch already stops a stampede of requests. Trade-off: there is no back-off and no circuit breaker, so during a long outage every request that arrives after the previous retry chain ends starts a new chain of three attempts.
+
+## The planner waits 5 s for the registry and 45 s for weather, never retries, and reports failures in a fixed order
+
+- **Question:** How long does the planner wait for each service, does it retry, and which failure does it report when several happen at once?
+- **Suggested:** A timeout per service, no retries, and a fixed reporting order. Labelled as personal judgment.
+- **Decision:** The planner waits 5 s for the registry and 45 s for weather (`REGISTRY_TIMEOUT_SECONDS`, `WEATHER_TIMEOUT_SECONDS`). It does not retry or cache upstream answers. A connect error, a timeout, a non-2xx status or an invalid body from either service is `503 UPSTREAM_UNAVAILABLE`, and the `detail` names the service. The plot is fetched first, because the other three calls need its soil, emitter and coordinates, so a registry failure there stops everything. The other three calls run at the same time. If several fail, they are reported in a fixed order (soil, emitter, forecast), so the registry is named before weather.
+- **Why:** Weather gets 45 s because weather-service may spend about 16 s on its own retries (see the entry above), plus a margin. The registry is a database lookup, so 5 s is generous. The planner does not retry, because weather-service already does and stacked retries would multiply the waiting time. Registry data is the source of truth, so the planner refuses rather than guess or use an old copy. A fixed order makes the answer predictable and testable. Trade-off: a fast failure still waits for the slowest call, up to 45 s, and a registry blip is a hard failure with no second attempt.
+
+## The registry reports its own database failure as 503 UNAVAILABLE with `Retry-After: 5`
+
+- **Question:** What does the registry answer when its database is missing or unreachable?
+- **Suggested:** `503 UNAVAILABLE`, because the failed dependency is the registry's own. Labelled as industry consensus for `503` with `Retry-After`; the 5 s value is personal judgment.
+- **Decision:** A missing SQLite file or a failed PostgreSQL connection returns `503`, `application/problem+json`, `code` `UNAVAILABLE`, and `Retry-After: 5`. The reason is written to the log for the operator. The response says only "Database unavailable".
+- **Why:** This follows the `UNAVAILABLE` / `UPSTREAM_UNAVAILABLE` split logged at the start of P2. SQLite would create an empty file on connect and then fail with confusing "no such table" errors, so the file is checked first. Trade-off: 5 s is a guess at how long a database restart takes.
