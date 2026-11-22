@@ -15,6 +15,7 @@ Where the current assignment disagrees with an earlier one, the current one wins
 - `scripts/`: `dev.sh` (start everything), `check.sh` (run every check) and their tests. Development helpers, not part of a service.
 - `perf/`: the registry's performance check (k6 script, launcher, dataset script, and `results/`). A later service keeps its own performance check next to it.
 - `docs/judgment-log.md`: the judgment log of P1. `docs/judgment-log-pN.md`: the log of assignment N, for example `docs/judgment-log-p2.md`.
+- `TODO.md`: ideas that reach across services, out of scope for the current assignment. An idea for one service is in that service's own `TODO.md`.
 - `docs/superpowers/`: design documents and plans written by the Superpowers skills
 - `docs/presentation/`: the presentation content
 
