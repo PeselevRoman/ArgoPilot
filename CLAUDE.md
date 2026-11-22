@@ -12,7 +12,7 @@ Where the current assignment disagrees with an earlier one, the current one wins
 
 - `tasks/`: the assignments, and the course's `seed_registry.sh` (course material, left unchanged)
 - `services/<name>/`: one folder per service. Each has its own code, `.venv`, `.env` (never committed), `.env.example` (committed), `README.md`, and `tests/`. Services never import each other's code. They talk over HTTP only.
-- `scripts/`: `dev.sh` (start everything), `check.sh` (run every check) and their tests. Development helpers, not part of a service.
+- `scripts/`: `dev.sh` (start everything), `check.sh` (run every check), `demo.sh` (start the presentation's stand-in services in `scripts/demo/`) and their tests. Development helpers, not part of a service.
 - `perf/`: the registry's performance check (k6 script, launcher, dataset script, and `results/`). A later service keeps its own performance check next to it.
 - `docs/judgment-log.md`: the judgment log of P1. `docs/judgment-log-pN.md`: the log of assignment N, for example `docs/judgment-log-p2.md`.
 - `TODO.md`: ideas that reach across services, out of scope for the current assignment. An idea for one service is in that service's own `TODO.md`.
