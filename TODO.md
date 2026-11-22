@@ -31,3 +31,13 @@ Ideas that reach across services. They are **out of scope for P2**. Ideas for on
 - Run the weather service with a fake provider that answers slowly, fails, or times out, and record how long a request takes in each case.
 - Check what many requests for the same new cell cost, to confirm they share one fetch (see "Concurrent requests for one cell share a single provider fetch" in `docs/judgment-log-p2.md`).
 - Check that the planner's 45 s timeout and the weather service's retries really fit together, with a request that goes through the whole chain.
+
+## 4. A traceability matrix from each requirement to its test
+
+**Now:** `tasks/p2.md` lists FR-2.1 to FR-2.19 and NFR-2.1 to NFR-2.8 (NFR-2.5 was removed). Each plan in `docs/superpowers/plans/` has a "Spec coverage" section that maps requirements to the tasks that build them, but nothing maps a requirement to the test, or the performance run, that proves it. Test names describe behaviour and do not carry the requirement's number. Asked "show me the test for FR-2.14", someone has to search for it. A requirement with no test, or a test that no longer matches its requirement, would not be noticed.
+
+**Make it checkable:**
+- Write a table, in one place (for example `docs/traceability.md`), with one row per requirement: its number, the test file and test names (or the k6 run, or the manual check) that cover it, and how it is verified (automated, measured, or by hand).
+- Some requirements are verified by hand, not by a test, for example NFR-2.8 (the 375 px layout, checked on 2026-11-21). The table must say so, so a manual check is not mistaken for an automated one.
+- Keep it from going stale: either a short script that reads a requirement number from each test (a marker or a comment such as `FR-2.14`) and fails when a requirement has none, or accept that the table is updated by hand with each change. The script is more work but is the only version that notices a gap.
+- Decide whether it covers earlier assignments. P1's requirements are in `tasks/p1_registry_api.md`, and P2 overrides some of them.
