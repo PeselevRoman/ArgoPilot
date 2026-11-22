@@ -1,6 +1,6 @@
 # AgroPilot: TODO
 
-Ideas that reach across services. They are **out of scope for P2**. Ideas for one service are in that service's own `TODO.md`, for example [`services/planner-service/TODO.md`](services/planner-service/TODO.md).
+Ideas that reach across services. They are **out of scope for P2**, except item 5, which is a checklist for finishing P2. Ideas for one service are in that service's own `TODO.md`, for example [`services/planner-service/TODO.md`](services/planner-service/TODO.md).
 
 ## 1. Contract tests, so a changed response format is caught before runtime
 
@@ -41,3 +41,14 @@ Ideas that reach across services. They are **out of scope for P2**. Ideas for on
 - Some requirements are verified by hand, not by a test, for example NFR-2.8 (the 375 px layout, checked on 2026-11-21). The table must say so, so a manual check is not mistaken for an automated one.
 - Keep it from going stale: either a short script that reads a requirement number from each test (a marker or a comment such as `FR-2.14`) and fails when a requirement has none, or accept that the table is updated by hand with each change. The script is more work but is the only version that notices a gap.
 - Decide whether it covers earlier assignments. P1's requirements are in `tasks/p1_registry_api.md`, and P2 overrides some of them.
+
+## 5. Checklist before the P2 presentation
+
+Not an idea for the product: things to do or confirm before presenting. Tick them off, then delete this item.
+
+- [ ] Run `scripts/check.sh` with `TEST_DATABASE_URL` set to a database named like `registry_test`, so the registry suite runs on PostgreSQL as well as SQLite (NFR-2.1). A plain run covers SQLite only.
+- [ ] Check the current Open-Meteo limits on its website. The capacity estimate given in conversation (about 10,000 calls per day, roughly 1,250 active cells) was from memory and may be out of date.
+- [ ] Remember which numbers are calculated and which are measured. The 16 s worst case for one weather request comes from the settings and was never measured. The measured ones are in `perf/results/`.
+- [ ] Say which checks are manual: the 375 px layout (NFR-2.8, passed on 2026-11-21) and the run of the real services together.
+- [ ] Push the commits made since the last push (the TODO files, the judgment-log entries and the README change). Pushing and opening the pull request are done by you, after asking.
+- [ ] Open the P2 pull request, with the measured numbers and the skills used in its description.
