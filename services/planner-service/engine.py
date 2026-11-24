@@ -95,7 +95,11 @@ def kc_for(crop: Crop, planting_date: date, day: date) -> float:
     return crop.kc_end
 
 
-def plan(plot: PlotInputs, forecast: Sequence[ForecastDay]) -> list[PlanDay]:
+def plan(
+    plot: PlotInputs,
+    forecast: Sequence[ForecastDay],
+    start_depletion_mm: float = 0.0,
+) -> list[PlanDay]:
     """One PlanDay per forecast day, in order, simulating the soil water bucket day by day.
 
     The bucket: think of the root zone as a tank (a float field in a game's Update loop). Rain
@@ -106,6 +110,10 @@ def plan(plot: PlotInputs, forecast: Sequence[ForecastDay]) -> list[PlanDay]:
     bucket is BELOW full (Dr = 0 is full, Dr = TAW is empty). The level is TAW - Dr.
     RAW is the part of the bucket the crop can use without stress; the rule is to irrigate
     before the depletion would pass RAW.
+
+    `start_depletion_mm` is the depletion at the start of the first day. The API never passes it
+    (the planner starts full, Dr = 0). Only the demo's numbers script passes it, to show a field
+    that is already partly dry (services/planner-service/TODO.md, item 1).
     """
     crop = plot.crop
 
@@ -115,9 +123,12 @@ def plan(plot: PlotInputs, forecast: Sequence[ForecastDay]) -> list[PlanDay]:
     # FAO-56 Ch. 8, Eq. 83: RAW = p x TAW (mm).
     raw = crop.p * taw
 
-    # Day 1 starts full (Dr = 0): the planner has no irrigation history (FAO-56 Eq. 87 note;
-    # a stated assumption).
-    dr = 0.0
+    if not 0.0 <= start_depletion_mm <= taw:
+        raise ValueError(f"start_depletion_mm must be from 0 to TAW ({taw:.2f} mm), got {start_depletion_mm}")
+
+    # Day 1 starts full (Dr = 0) unless the caller gives a start depletion: the planner has no
+    # irrigation history (FAO-56 Eq. 87 note; a stated assumption).
+    dr = start_depletion_mm
     days: list[PlanDay] = []
     for fc in forecast:
         kc = kc_for(crop, plot.planting_date, fc.date)

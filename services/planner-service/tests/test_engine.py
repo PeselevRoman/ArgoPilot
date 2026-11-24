@@ -132,6 +132,29 @@ def test_bucket_starts_full_on_day_one():
     assert days[0].irrigation_mm == 0.0
 
 
+def test_start_depletion_default_is_the_full_bucket():
+    assert plan(flat_plot(), forecast([1.0, 1.0])) == plan(flat_plot(), forecast([1.0, 1.0]), 0.0)
+
+
+def test_start_depletion_above_raw_irrigates_on_day_one():
+    # TAW 70, RAW 35. Start 60 mm down, so today's 1 mm pushes the depletion past RAW: refill 60 mm.
+    day = plan(flat_plot(), forecast([1.0]), start_depletion_mm=60.0)[0]
+    assert day.irrigation_mm == 60.0
+    assert day.bucket_mm == TAW - 1.0
+
+
+def test_start_depletion_below_raw_does_not_irrigate():
+    day = plan(flat_plot(), forecast([1.0]), start_depletion_mm=10.0)[0]
+    assert day.irrigation_mm == 0.0
+    assert day.bucket_mm == TAW - 11.0
+
+
+@pytest.mark.parametrize("start", [-0.5, TAW + 0.5])
+def test_start_depletion_outside_zero_to_taw_is_refused(start):
+    with pytest.raises(ValueError):
+        plan(flat_plot(), forecast([1.0]), start_depletion_mm=start)
+
+
 def test_rain_reduces_the_depletion():
     # Day 1 depletes 20; day 2 rain 5 then ETc 10: 20 - 5 + 10 = 25 depleted, level 45.
     days = plan(flat_plot(), forecast([20.0, 10.0], rain=[0.0, 5.0]))
