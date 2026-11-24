@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start what the P2 demo needs, apart from the real app (scripts/dev.sh): the stand-in services
-# (scripts/demo/stubs.mjs, canned answers) and a second frontend on port 3100 that talks to them.
+# (scripts/demo/stubs.mjs, the engine's saved answers) and a second frontend on port 3100 that talks to them.
 # Ctrl+C stops both.
 #
 #   scripts/demo.sh             build the frontend, start both, wait until they answer
@@ -80,7 +80,7 @@ wait_or_stop demo-stubs http://127.0.0.1:8199/state 20
 wait_or_stop demo-frontend http://127.0.0.1:3100/ 60
 
 echo
-echo "The demo is running (the stand-in gives canned answers, not the real services)."
+echo "The demo is running (the stand-in serves the engine's saved answers, not the real services)."
 echo "  Plot page:  http://localhost:3100/plots/c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002"
 echo "  Switch the state with:  curl localhost:8199/state/<water|full|stale|weather-down|registry-down|reset>"
 echo "  Logs: $LOG_DIR/   Press Ctrl+C to stop both."

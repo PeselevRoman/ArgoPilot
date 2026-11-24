@@ -9,7 +9,7 @@ Small helpers for working on the whole project. They are not part of any service
 | `check.sh` | Runs every automated check: the registry, weather and planner tests, the frontend tests, lint, types and build, and the scripts' own tests. One line per suite. `--no-build` skips the frontend build. |
 | `lib.sh` | Functions shared by the scripts: finding free ports, waiting for a URL, starting and stopping processes, running suites. It is sourced, never run. |
 | `tests/` | Tests for `lib.sh` and for the checks of `dev.sh` and `demo.sh`. |
-| `demo/stubs.mjs` | Stand-in registry, weather and planner with canned answers and a control API (`curl localhost:8199/state/<water\|full\|stale\|weather-down\|registry-down\|reset>`), for the P2 presentation. Not the real services. `demo/stubs.test.mjs` tests it (`node --test scripts/demo/stubs.test.mjs`). |
+| `demo/stubs.mjs` | Stand-in registry, weather and planner that serves the engine's saved answers (`plan_numbers.json`) and a control API (`curl localhost:8199/state/<water\|full\|stale\|weather-down\|registry-down\|reset>`), for the P2 presentation. Not the real services. `demo/stubs.test.mjs` tests it (`node --test scripts/demo/stubs.test.mjs`). |
 
 Logs and full test output go to `scripts/.logs/` (not committed).
 

@@ -118,7 +118,7 @@ export async function start({ ports = {} } = {}) {
 // Run directly: start on the fixed ports and print what to do.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const demo = await start();
-  console.log("Stand-in services running (canned answers, not the real services):");
+  console.log("Stand-in services running (the engine's saved answers, not the real services):");
   console.log(`  registry  http://127.0.0.1:${demo.ports.registry}`);
   console.log(`  weather   http://127.0.0.1:${demo.ports.weather}`);
   console.log(`  planner   http://127.0.0.1:${demo.ports.planner}`);
