@@ -25,7 +25,7 @@ Ideas that reach across services. They are **out of scope for P2**, except item 
 
 ## 3. Measure the weather service when the cache is empty or the provider is slow
 
-**Now:** the 2.3 ms p95 is for a fresh forecast with a fake provider. A cache miss waits for Open-Meteo, and after three failed attempts the worst case is about 16 s (3 × 5 s timeout plus 2 × 0.5 s waits). That figure is calculated from the settings, not measured. The planner waits up to 45 s for it.
+**Now:** the 2.3 ms p95 is for a fresh forecast with a fake provider. A cache miss waits for Open-Meteo, and after three failed attempts the worst case is about 31 s (each attempt may spend up to 5 s connecting and up to 5 s reading, plus two 0.5 s waits). That figure is calculated from the settings, not measured. The planner waits up to 45 s for it.
 
 **Measure it:**
 - Run the weather service with a fake provider that answers slowly, fails, or times out, and record how long a request takes in each case.
@@ -48,7 +48,7 @@ Not an idea for the product: things to do or confirm before presenting. Tick the
 
 - [ ] Run `scripts/check.sh` with `TEST_DATABASE_URL` set to a database named like `registry_test`, so the registry suite runs on PostgreSQL as well as SQLite (NFR-2.1). A plain run covers SQLite only.
 - [ ] Check the current Open-Meteo limits on its website. The capacity estimate given in conversation (about 10,000 calls per day, roughly 1,250 active cells) was from memory and may be out of date.
-- [ ] Remember which numbers are calculated and which are measured. The 16 s worst case for one weather request comes from the settings and was never measured. The measured ones are in `perf/results/`.
+- [ ] Remember which numbers are calculated and which are measured. The 31 s worst case for one weather request comes from the settings and was never measured. The measured ones are in `perf/results/`.
 - [ ] Say which checks are manual: the 375 px layout (NFR-2.8, passed on 2026-11-21) and the run of the real services together.
 - [ ] Push the commits made since the last push (the TODO files, the judgment-log entries and the README change). Pushing and opening the pull request are done by you, after asking.
 - [ ] Open the P2 pull request, with the measured numbers and the skills used in its description.
