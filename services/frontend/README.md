@@ -20,7 +20,7 @@ The app refuses to start, with a message naming the variable, if a variable in `
 | `REGISTRY_URL` | base URL of registry-service |
 | `WEATHER_URL` | base URL of weather-service (only `/health` is called) |
 | `PLANNER_URL` | base URL of planner-service |
-| `REQUEST_TIMEOUT_MS` | how long to wait for any service, in milliseconds |
+| `REQUEST_TIMEOUT_MS` | how long to wait for any service, in milliseconds. It must be longer than the planner's waits for its upstreams (registry 5 s + weather 45 s). The example value is 60000. |
 
 ## Scripts
 
