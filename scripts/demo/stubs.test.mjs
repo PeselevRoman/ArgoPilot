@@ -2,39 +2,56 @@
 //   node --test scripts/demo/stubs.test.mjs
 // They start the stand-in on free ports and call it over HTTP. No real service is involved.
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { after, before, test } from "node:test";
-import { start } from "./stubs.mjs";
+import { fileURLToPath } from "node:url";
+import { FARMS, PLOTS, start } from "./stubs.mjs";
+
+const NORTH = "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002";
+const SEED = fileURLToPath(new URL("../../tasks/seed_registry.sh", import.meta.url));
+// The engine's answers (written by services/planner-service/demo_numbers.py).
+const NUMBERS = JSON.parse(readFileSync(new URL("./plan_numbers.json", import.meta.url), "utf8"));
+const planOf = (scenario, id) => NUMBERS.scenarios[scenario][id].days;
 
 let demo;
 const url = (name, path) => `http://127.0.0.1:${demo.ports[name]}${path}`;
 const setState = (state) => fetch(url("control", `/state/${state}`));
-const plan = async (id = "p1") => {
+const plan = async (id = NORTH) => {
   const res = await fetch(url("planner", `/v1/plots/${id}/plan?days=7`));
   return { res, body: await res.json() };
 };
 
 before(async () => {
-  demo = await start({
-    ports: { registry: 0, weather: 0, planner: 0, control: 0 },
-    today: "2026-11-27",
-  });
+  demo = await start({ ports: { registry: 0, weather: 0, planner: 0, control: 0 } });
 });
 after(() => demo.close());
 test.beforeEach(() => setState("reset"));
 
-test("the default state is water: 7 days from today, today and day 4 irrigate", async () => {
-  const { res, body } = await plan();
-  assert.equal(res.status, 200);
-  assert.equal(body.plot_id, "p1");
-  assert.equal(body.days.length, 7);
+test("the default state is water: each plot gets the engine's water plan, 7 days", async () => {
+  for (const plotId of PLOTS.map((p) => p.id)) {
+    const { res, body } = await plan(plotId);
+    assert.equal(res.status, 200);
+    assert.equal(body.plot_id, plotId);
+    assert.deepEqual(body.days, planOf("water", plotId));
+    assert.equal(body.days.length, 7);
+  }
+});
+
+test("the water plan of the North block: its dates, and irrigation today (day 1) and on day 6", async () => {
+  const { body } = await plan();
   assert.deepEqual(
     body.days.map((d) => d.date),
     ["2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03"],
   );
-  assert.equal(body.days[0].run_minutes, 341.55);
-  assert.equal(body.days[0].litres, 18975);
-  assert.equal(body.days[1].run_minutes, 0);
-  assert.equal(body.days[3].run_minutes, 341.55);
+  // The headline is the first day, so today's panel is the blue "water" one.
+  assert.ok(body.days[0].litres > 0);
+  assert.deepEqual(
+    body.days.filter((d) => d.litres > 0).map((d) => d.date),
+    ["2026-11-27", "2026-12-02"],
+  );
   assert.ok(body.days.every((d) => d.stale === false));
 });
 
@@ -58,8 +75,13 @@ test("numbers are rounded like the real planner: 2 decimals, kc 3", async () => 
   }
 });
 
-test("full: no day irrigates", async () => {
+test("full: each plot gets the engine's plan for its seed planting date", async () => {
   await setState("full");
+  for (const plotId of PLOTS.map((p) => p.id)) {
+    const { body } = await plan(plotId);
+    assert.deepEqual(body.days, planOf("full", plotId));
+  }
+  // The North block was planted in March, so it is past its season: no irrigation at all.
   const { body } = await plan();
   assert.ok(body.days.every((d) => d.litres === 0 && d.run_minutes === 0 && d.stale === false));
 });
@@ -70,7 +92,7 @@ test("stale: all 7 days are stale, like the real planner (one flag for the whole
   assert.equal(res.status, 200);
   assert.equal(body.days.length, 7);
   assert.ok(body.days.every((d) => d.stale === true));
-  assert.equal(body.days[0].run_minutes, 341.55);
+  assert.deepEqual(body.days, planOf("stale", NORTH));
 });
 
 test("weather-down: the weather health fails, and the planner answers 503 naming the weather service", async () => {
@@ -117,14 +139,39 @@ test("the registry lists farms and plots, and one plot by id", async () => {
   const farms = await (await fetch(url("registry", "/v1/farms"))).json();
   const plots = await (await fetch(url("registry", "/v1/plots"))).json();
   assert.ok(farms.length >= 2 && farms.every((f) => f.id && f.name));
-  assert.ok(plots.length >= 3);
+  assert.equal(plots.length, 4);
   for (const p of plots) {
     assert.ok(farms.some((f) => f.id === p.farm_id), "every plot belongs to a listed farm");
     assert.deepEqual(Object.keys(p).sort(), ["area_m2", "crop_id", "farm_id", "id", "name"]);
   }
-  const one = await fetch(url("registry", "/v1/plots/p1"));
+  const one = await fetch(url("registry", `/v1/plots/${NORTH}`));
   assert.equal(one.status, 200);
-  assert.equal((await one.json()).id, "p1");
+  assert.equal((await one.json()).id, NORTH);
+});
+
+test("the stand-in's farms and plots are the rows of tasks/seed_registry.sh", (t) => {
+  if (spawnSync("sqlite3", ["-version"]).error) {
+    t.skip("sqlite3 is not installed, and the seed script needs it");
+    return;
+  }
+  const dir = mkdtempSync(join(tmpdir(), "stub-seed-"));
+  try {
+    const db = join(dir, "registry.db");
+    const seeded = spawnSync("bash", [SEED, db], { encoding: "utf8" });
+    assert.equal(seeded.status, 0, seeded.stderr);
+    const query = (sql) => {
+      const out = spawnSync("sqlite3", ["-json", db, sql], { encoding: "utf8" });
+      assert.equal(out.status, 0, out.stderr);
+      return out.stdout.trim() ? JSON.parse(out.stdout) : [];
+    };
+    const byId = (a, b) => (a.id < b.id ? -1 : 1);
+    const seedFarms = query("SELECT id, name FROM farms").sort(byId);
+    const seedPlots = query("SELECT id, farm_id, name, crop_id, area_m2 FROM plots").sort(byId);
+    assert.deepEqual([...FARMS].sort(byId), seedFarms);
+    assert.deepEqual([...PLOTS].sort(byId), seedPlots);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("an unknown plot is a 404 problem from the registry and from the planner", async () => {

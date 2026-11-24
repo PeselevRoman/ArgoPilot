@@ -1,59 +1,44 @@
 // Stand-in registry, weather and planner for the P2 demo. NOT the real services.
 //
 // Why it exists: the real planner starts every plan with a full soil bucket, so it never says
-// "water today", and a stale forecast needs Open-Meteo to fail. This stand-in gives the frontend
-// canned answers for each state, so every screen can be shown on demand. The numbers are fixed
-// examples (the hand-calculated case 1 of the irrigation-calc-reference skill). Nothing here
-// calculates an irrigation number.
+// "water today" for a plot past its season, and a stale forecast needs Open-Meteo to fail. This
+// stand-in gives the frontend fixed answers for each state, so every screen can be shown on demand.
+// The plan numbers are NOT typed here: they are in plan_numbers.json, written by the real engine
+// (services/planner-service/demo_numbers.py). In the water state each plot starts partly dry, by a
+// stated field-check value (see that script), so today's panel shows irrigation. Nothing in this
+// file calculates an irrigation number.
 //
 // Run:      node scripts/demo/stubs.mjs
 // Switch:   curl localhost:8199/state/<water|full|stale|weather-down|registry-down|reset>
+import { readFileSync } from "node:fs";
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 
 export const STATES = ["water", "full", "stale", "weather-down", "registry-down"];
 
-const FARMS = [
-  { id: "f1", name: "Demo farm" },
-  { id: "f2", name: "Greenhouse farm" },
+// The farms and plots are the rows of tasks/seed_registry.sh, copied here. stubs.test.mjs fails if
+// they drift from that file.
+export const FARMS = [
+  { id: "b7e2c0a0-3c1d-4f0a-9a11-0c5d2e6f1001", name: "Demo cooperative" },
+  { id: "a9c1e4b2-6f70-4d8e-a144-3f8b5c904004", name: "East farm" },
 ];
-const PLOTS = [
-  { id: "p1", farm_id: "f1", name: "North block", crop_id: "tomato", area_m2: 1000 },
-  { id: "p2", farm_id: "f1", name: "East block", crop_id: "bell-pepper", area_m2: 800 },
-  { id: "p3", farm_id: "f2", name: "Greenhouse", crop_id: "tomato", area_m2: 300 },
+export const PLOTS = [
+  { id: "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002", farm_id: "b7e2c0a0-3c1d-4f0a-9a11-0c5d2e6f1001", name: "North block", crop_id: "tomato", area_m2: 1000 },
+  { id: "d9a4e2c1-5e3f-4b6a-9c33-2e7f4a803003", farm_id: "b7e2c0a0-3c1d-4f0a-9a11-0c5d2e6f1001", name: "East block", crop_id: "bell-pepper", area_m2: 800 },
+  { id: "e0b5f3d2-6f40-4c7b-8d44-3f8a5b914004", farm_id: "a9c1e4b2-6f70-4d8e-a144-3f8b5c904004", name: "West block", crop_id: "tomato", area_m2: 1500 },
+  { id: "f1c6a4e3-7051-4d8c-9e55-4a9b6c025005", farm_id: "a9c1e4b2-6f70-4d8e-a144-3f8b5c904004", name: "Greenhouse", crop_id: "bell-pepper", area_m2: 400 },
 ];
 
-// Canned numbers, already rounded the way the real planner rounds (2 decimals, kc 3).
-const ET0 = [2.69, 3.03, 3.17, 3.09, 2.65, 2.74, 2.57];
-const WATER = {
-  kc: 1.15,
-  irrigates: [true, false, false, true, false, false, false],
-  bucket: [51.2, 45.3, 39.1, 51.2, 44.4, 38.2, 32.1],
-};
-const FULL = {
-  kc: 0.8,
-  irrigates: [false, false, false, false, false, false, false],
-  bucket: [120.29, 117.92, 115.39, 112.92, 110.8, 108.52, 106.46],
-};
+// The engine's answers, written by demo_numbers.py: scenarios "water", "stale" and "full", each
+// keyed by plot id. Rounded like the real planner (2 decimals, kc 3).
+const NUMBERS = JSON.parse(readFileSync(new URL("./plan_numbers.json", import.meta.url), "utf8"));
 
-function addDays(isoDate, days) {
-  const date = new Date(`${isoDate}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function planDays(state, today) {
-  const curve = state === "full" ? FULL : WATER;
-  return ET0.map((et0, i) => ({
-    date: addDays(today, i),
-    et0_mm: et0,
-    kc: curve.kc,
-    litres: curve.irrigates[i] ? 18975 : 0,
-    run_minutes: curve.irrigates[i] ? 341.55 : 0,
-    // The weather service sends one stale flag for the whole forecast, so every day is stale.
-    stale: state === "stale",
-    bucket_mm: curve.bucket[i],
-  }));
+// The state picks the scenario. "water" is the default, and the registry and weather states
+// reuse the water plan (they fail before a plan is sent, so they never show it).
+function planFor(state, plotId) {
+  const scenario = state === "full" || state === "stale" ? state : "water";
+  const entry = NUMBERS.scenarios[scenario][plotId];
+  return { plot_id: plotId, days: entry.days };
 }
 
 function send(res, status, body, type = "application/json") {
@@ -70,8 +55,8 @@ function listen(handler, port) {
   });
 }
 
-// Start the four servers. `ports` are 0 in the tests (any free port); `today` can be fixed there.
-export async function start({ ports = {}, today = new Date().toISOString().slice(0, 10) } = {}) {
+// Start the four servers. `ports` are 0 in the tests (any free port).
+export async function start({ ports = {} } = {}) {
   let state = "water";
   const wanted = { registry: 8100, weather: 8101, planner: 8102, control: 8199, ...ports };
 
@@ -105,7 +90,7 @@ export async function start({ ports = {}, today = new Date().toISOString().slice
       const service = state === "registry-down" ? "registry-service" : "weather-service";
       return problem(res, 503, "UPSTREAM_UNAVAILABLE", `${service} is unavailable: ConnectError`);
     }
-    return send(res, 200, { plot_id: id, days: planDays(state, today) });
+    return send(res, 200, planFor(state, id));
   }, wanted.planner);
 
   const control = await listen((req, res) => {

@@ -81,7 +81,7 @@ wait_or_stop demo-frontend http://127.0.0.1:3100/ 60
 
 echo
 echo "The demo is running (the stand-in gives canned answers, not the real services)."
-echo "  Plot page:  http://localhost:3100/plots/p1"
+echo "  Plot page:  http://localhost:3100/plots/c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002"
 echo "  Switch the state with:  curl localhost:8199/state/<water|full|stale|weather-down|registry-down|reset>"
 echo "  Logs: $LOG_DIR/   Press Ctrl+C to stop both."
 
