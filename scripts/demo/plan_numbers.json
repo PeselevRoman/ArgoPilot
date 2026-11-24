@@ -1,0 +1,893 @@
+{
+  "about": "Written by services/planner-service/demo_numbers.py from the real engine. Do not edit by hand.",
+  "forecast_start": "2026-11-27",
+  "et0_mm": [
+    6.95,
+    6.49,
+    6.49,
+    7.13,
+    8.28,
+    8.82,
+    7.66
+  ],
+  "scenarios": {
+    "water": {
+      "d9a4e2c1-5e3f-4b6a-9c33-2e7f4a803003": {
+        "name": "East block",
+        "crop_id": "bell-pepper",
+        "area_m2": 800.0,
+        "planting_date": "2026-10-01",
+        "start_depletion_mm": 9.0,
+        "start_share_of_raw": 0.3,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.96,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 84.33
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.973,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 78.01
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.986,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 71.62
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.999,
+            "litres": 22706.5,
+            "run_minutes": 638.62,
+            "stale": false,
+            "bucket_mm": 92.88
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.011,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 84.51
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.024,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 75.47
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.037,
+            "litres": 19622.91,
+            "run_minutes": 551.89,
+            "stale": false,
+            "bucket_mm": 92.06
+          }
+        ]
+      },
+      "f1c6a4e3-7051-4d8c-9e55-4a9b6c025005": {
+        "name": "Greenhouse",
+        "crop_id": "bell-pepper",
+        "area_m2": 400.0,
+        "planting_date": "2026-10-01",
+        "start_depletion_mm": 15.75,
+        "start_share_of_raw": 0.6,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.96,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 65.08
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.973,
+            "litres": 8968.8,
+            "run_minutes": 242.16,
+            "stale": false,
+            "bucket_mm": 81.19
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.986,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 74.79
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.999,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 67.67
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.011,
+            "litres": 7932.38,
+            "run_minutes": 214.17,
+            "stale": false,
+            "bucket_mm": 79.13
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.024,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 70.09
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.037,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 62.15
+          }
+        ]
+      },
+      "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002": {
+        "name": "North block",
+        "crop_id": "tomato",
+        "area_m2": 1000.0,
+        "planting_date": "2026-09-20",
+        "start_depletion_mm": 44.1,
+        "start_share_of_raw": 0.9,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 1.136,
+            "litres": 44100.0,
+            "run_minutes": 1587.6,
+            "stale": false,
+            "bucket_mm": 114.6
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 107.14
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 99.68
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 91.48
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 81.95
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.15,
+            "litres": 40545.44,
+            "run_minutes": 1459.64,
+            "stale": false,
+            "bucket_mm": 112.36
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 103.55
+          }
+        ]
+      },
+      "e0b5f3d2-6f40-4c7b-8d44-3f8a5b914004": {
+        "name": "West block",
+        "crop_id": "tomato",
+        "area_m2": 1500.0,
+        "planting_date": "2026-09-20",
+        "start_depletion_mm": 20.92,
+        "start_share_of_raw": 0.9,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 1.136,
+            "litres": 31380.0,
+            "run_minutes": 1255.2,
+            "stale": false,
+            "bucket_mm": 50.2
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 42.74
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 35.28
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 1.15,
+            "litres": 34235.91,
+            "run_minutes": 1369.44,
+            "stale": false,
+            "bucket_mm": 49.9
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 40.38
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.15,
+            "litres": 26582.25,
+            "run_minutes": 1063.29,
+            "stale": false,
+            "bucket_mm": 47.96
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 39.15
+          }
+        ]
+      }
+    },
+    "stale": {
+      "d9a4e2c1-5e3f-4b6a-9c33-2e7f4a803003": {
+        "name": "East block",
+        "crop_id": "bell-pepper",
+        "area_m2": 800.0,
+        "planting_date": "2026-10-01",
+        "start_depletion_mm": 9.0,
+        "start_share_of_raw": 0.3,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.96,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 84.33
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.973,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 78.01
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.986,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 71.62
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.999,
+            "litres": 22706.5,
+            "run_minutes": 638.62,
+            "stale": true,
+            "bucket_mm": 92.88
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.011,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 84.51
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.024,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 75.47
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.037,
+            "litres": 19622.91,
+            "run_minutes": 551.89,
+            "stale": true,
+            "bucket_mm": 92.06
+          }
+        ]
+      },
+      "f1c6a4e3-7051-4d8c-9e55-4a9b6c025005": {
+        "name": "Greenhouse",
+        "crop_id": "bell-pepper",
+        "area_m2": 400.0,
+        "planting_date": "2026-10-01",
+        "start_depletion_mm": 15.75,
+        "start_share_of_raw": 0.6,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.96,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 65.08
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.973,
+            "litres": 8968.8,
+            "run_minutes": 242.16,
+            "stale": true,
+            "bucket_mm": 81.19
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.986,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 74.79
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.999,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 67.67
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.011,
+            "litres": 7932.38,
+            "run_minutes": 214.17,
+            "stale": true,
+            "bucket_mm": 79.13
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.024,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 70.09
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.037,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 62.15
+          }
+        ]
+      },
+      "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002": {
+        "name": "North block",
+        "crop_id": "tomato",
+        "area_m2": 1000.0,
+        "planting_date": "2026-09-20",
+        "start_depletion_mm": 44.1,
+        "start_share_of_raw": 0.9,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 1.136,
+            "litres": 44100.0,
+            "run_minutes": 1587.6,
+            "stale": true,
+            "bucket_mm": 114.6
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 107.14
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 99.68
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 91.48
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 81.95
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.15,
+            "litres": 40545.44,
+            "run_minutes": 1459.64,
+            "stale": true,
+            "bucket_mm": 112.36
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 103.55
+          }
+        ]
+      },
+      "e0b5f3d2-6f40-4c7b-8d44-3f8a5b914004": {
+        "name": "West block",
+        "crop_id": "tomato",
+        "area_m2": 1500.0,
+        "planting_date": "2026-09-20",
+        "start_depletion_mm": 20.92,
+        "start_share_of_raw": 0.9,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 1.136,
+            "litres": 31380.0,
+            "run_minutes": 1255.2,
+            "stale": true,
+            "bucket_mm": 50.2
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 42.74
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 35.28
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 1.15,
+            "litres": 34235.91,
+            "run_minutes": 1369.44,
+            "stale": true,
+            "bucket_mm": 49.9
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 40.38
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 1.15,
+            "litres": 26582.25,
+            "run_minutes": 1063.29,
+            "stale": true,
+            "bucket_mm": 47.96
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 1.15,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": true,
+            "bucket_mm": 39.15
+          }
+        ]
+      }
+    },
+    "full": {
+      "d9a4e2c1-5e3f-4b6a-9c33-2e7f4a803003": {
+        "name": "East block",
+        "crop_id": "bell-pepper",
+        "area_m2": 800.0,
+        "planting_date": "2026-04-12",
+        "start_depletion_mm": 0.0,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 93.75
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 87.9
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 82.06
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 75.65
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 0.9,
+            "litres": 19483.2,
+            "run_minutes": 547.97,
+            "stale": false,
+            "bucket_mm": 92.55
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 84.61
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 77.72
+          }
+        ]
+      },
+      "f1c6a4e3-7051-4d8c-9e55-4a9b6c025005": {
+        "name": "Greenhouse",
+        "crop_id": "bell-pepper",
+        "area_m2": 400.0,
+        "planting_date": "2026-05-01",
+        "start_depletion_mm": 0.0,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 81.25
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 75.4
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 69.56
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 63.15
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 0.9,
+            "litres": 9741.6,
+            "run_minutes": 263.02,
+            "stale": false,
+            "bucket_mm": 80.05
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 72.11
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 0.9,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 65.22
+          }
+        ]
+      },
+      "c8f3d1b0-4d2e-5a1b-8b22-1d6e3f702002": {
+        "name": "North block",
+        "crop_id": "tomato",
+        "area_m2": 1000.0,
+        "planting_date": "2026-03-01",
+        "start_depletion_mm": 0.0,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 116.94
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 111.75
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 106.56
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 100.85
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 94.23
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 87.17
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 81.04
+          }
+        ]
+      },
+      "e0b5f3d2-6f40-4c7b-8d44-3f8a5b914004": {
+        "name": "West block",
+        "crop_id": "tomato",
+        "area_m2": 1500.0,
+        "planting_date": "2026-02-15",
+        "start_depletion_mm": 0.0,
+        "days": [
+          {
+            "date": "2026-11-27",
+            "et0_mm": 6.95,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 52.54
+          },
+          {
+            "date": "2026-11-28",
+            "et0_mm": 6.49,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 47.35
+          },
+          {
+            "date": "2026-11-29",
+            "et0_mm": 6.49,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 42.16
+          },
+          {
+            "date": "2026-11-30",
+            "et0_mm": 7.13,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 36.45
+          },
+          {
+            "date": "2026-12-01",
+            "et0_mm": 8.28,
+            "kc": 0.8,
+            "litres": 32472.0,
+            "run_minutes": 1298.88,
+            "stale": false,
+            "bucket_mm": 51.48
+          },
+          {
+            "date": "2026-12-02",
+            "et0_mm": 8.82,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 44.42
+          },
+          {
+            "date": "2026-12-03",
+            "et0_mm": 7.66,
+            "kc": 0.8,
+            "litres": 0.0,
+            "run_minutes": 0.0,
+            "stale": false,
+            "bucket_mm": 38.29
+          }
+        ]
+      }
+    }
+  }
+}
