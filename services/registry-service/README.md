@@ -24,14 +24,30 @@ uv run uvicorn main:app --host 127.0.0.1 --port 8000
 
 ## Database
 
-The service reads `DATABASE_URL` and has no default: without it the server refuses to start. Set it in the environment, or copy `.env.example` to `.env` (not committed). A variable already set in the environment wins over `.env`.
+The service reads `DATABASE_URL` and has no default: without it the server refuses to start. Set it in the environment, or copy `.env.example` to `.env` (not committed). A variable already set in the environment wins over `.env`. Settings are read in `config.py` with pydantic-settings; other variables in `.env` (later services add more) are ignored, and a missing or invalid `DATABASE_URL` stops the start with a clear error.
 
 | Engine | `DATABASE_URL` |
 | --- | --- |
 | SQLite | `sqlite:///registry.db`. A relative path is resolved from the service folder, not the working directory. |
 | PostgreSQL | `postgresql://user:password@host:5432/dbname` |
 
-The service never creates tables. SQLite: `seed_registry.sh` builds `registry.db` from `schema.sql`. PostgreSQL: run `schema.postgres.sql` once on the production database before the first start (for example `psql "$DATABASE_URL" -f schema.postgres.sql`), then load the catalogue rows.
+The service itself never creates tables. To set up a new, empty database, run one command from this folder:
+
+```bash
+uv run python seed.py
+```
+
+It reads `DATABASE_URL`, creates the tables (`schema.sql` for SQLite, `schema.postgres.sql` for PostgreSQL) and loads the sample data: 2 farms, 4 plots, 2 crops, 3 soils and 4 emitters, the same rows as `seed_registry.sh`. It never deletes anything: if any of the tables already exists, it stops with a message and changes nothing.
+
+Set up PostgreSQL from nothing:
+
+```bash
+sudo -u postgres createdb -O YOUR_ROLE registry        # once, with your own role name
+# in .env: DATABASE_URL=postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry
+uv run python seed.py
+```
+
+SQLite: set `DATABASE_URL=sqlite:///registry.db` and run `uv run python seed.py` (or `bash seed_registry.sh`, which deletes and rewrites the file each time).
 
 Check that the server is up:
 
@@ -136,6 +152,7 @@ Every error response uses `application/problem+json` and has a `code` field.
 | `409` | `CONFLICT` | A plot name is already used on the same farm, or a farm with plots is deleted |
 | `405` | `VALIDATION` | The HTTP method is not allowed on that route. The `Allow` header lists the allowed methods. |
 | `503` | `UNAVAILABLE` | The service cannot connect to the database: the SQLite file is missing, or PostgreSQL is unreachable. The response includes `Retry-After: 5`. The cause is logged. |
+| `503` | `UNAVAILABLE` | An unexpected internal error. The cause is logged; nothing about it is returned. No `Retry-After`. |
 
 The `title` in each error follows the standard reason phrase for its status, for example "Unprocessable Content" for `422`.
 
@@ -159,13 +176,15 @@ Each database test runs on SQLite and, when `TEST_DATABASE_URL` is set, on Postg
 TEST_DATABASE_URL=postgresql://user:password@localhost:5432/registry_test uv run pytest
 ```
 
+Set `TEST_DATABASE_URL` in the shell, on the command line or with `export`, not in `.env`: the service reads only the settings it declares in `config.py`, so a `TEST_DATABASE_URL` line in `.env` is ignored and the PostgreSQL tests are skipped without a warning.
+
 The PostgreSQL test database is dropped and rebuilt on every test, so its name must contain `test`; the tests refuse to run otherwise. On Windows, run PostgreSQL inside WSL or in Docker (for example `docker run -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres`) and connect to `localhost`.
 
 ## Performance check
 
 The performance check measures the list and get-by-id routes at 10 requests per second each. The target is a 95th-percentile response time under 100 ms. It needs [k6](https://k6.io), which is installed separately from this project.
 
-From the repository root:
+From the repository root, on SQLite:
 
 ```bash
 services/registry-service/.venv/bin/python perf/seed_perf_db.py perf/perf.db   # 100 farms, 10,000 plots
@@ -174,14 +193,38 @@ k6 run --summary-export summary.json perf/nfr_1_1.js
 python3 perf/record_results.py summary.json                                    # writes perf/results/
 ```
 
+On PostgreSQL, use a separate database whose name contains `perf` (for example `registry_perf`), and give the scripts its URL from a shell variable:
+
+```bash
+export PERF_DATABASE_URL='postgresql://YOUR_ROLE:YOUR_PASSWORD@127.0.0.1:5432/registry_perf'
+services/registry-service/.venv/bin/python perf/seed_perf_db.py "$PERF_DATABASE_URL"
+services/registry-service/.venv/bin/python perf/run_server.py "$PERF_DATABASE_URL" &
+k6 run --summary-export summary.json perf/nfr_1_1.js
+python3 perf/record_results.py summary.json postgresql
+```
+
+The PostgreSQL perf database is rebuilt on every run: its tables are dropped first. The script refuses any target whose name does not contain `perf` (the database name, or the SQLite file name), so `registry` or `registry.db` cannot be wiped by mistake. A `dbname` or `database` query parameter in the URL is refused too. The scripts print the URL with the password hidden.
+
+The perf helpers have their own small tests: `services/registry-service/.venv/bin/python -m pytest perf/tests`, from the repository root.
+
 The results of each run are kept in `perf/results/`.
+
+Latest runs, p95 at 10 requests per second (limit 100 ms):
+
+| Route | SQLite (2026-11-13) | PostgreSQL (2026-11-15) |
+| --- | --- | --- |
+| `GET /v1/plots` (list, 10,000 rows) | 86.56 ms | 83.50 ms |
+| `GET /v1/plots/{id}` | 6.51 ms | 7.62 ms |
+
+All ten routes passed on PostgreSQL, with 0.00% failed requests. The list of plots is the slowest route on both engines and has about 18% headroom (81.6 ms against the 100 ms target). See `perf/results/2026-11-21T173455Z_v0.1.0.md`, measured on the code of 2026-11-21 (commit `2233b76`). The earlier run, `2026-11-15T152751Z_v0.1.0.md`, gave 83.5 ms.
 
 ## Layout
 
 | File | Purpose |
 | --- | --- |
 | `main.py` | Creates the app and connects the routes and error handling |
-| `db.py` | Reads `DATABASE_URL`, builds the engine, and gives each request one connection and transaction (`db.Conn`) |
+| `config.py` | Reads and checks the settings (`DATABASE_URL`) from the environment and `.env` |
+| `db.py` | Builds the engine, and gives each request one connection and transaction (`db.Conn`) |
 | `tables.py` | The five tables as SQLAlchemy `Table` objects |
 | `ids.py` | Parses id text as a UUID |
 | `errors.py` | Turns every error into `application/problem+json` |
@@ -191,7 +234,8 @@ The results of each run are kept in `perf/results/`.
 | `schema.sql` | SQLite table definitions, used by the seed script and the tests |
 | `schema.postgres.sql` | PostgreSQL table definitions, run once by hand in production and by the tests |
 | `.env.example` | Example `DATABASE_URL`; copy to `.env` |
-| `seed_registry.sh` | Creates `registry.db` with the sample data |
+| `seed.py` | Creates the tables and loads the sample data in an empty SQLite or PostgreSQL database |
+| `seed_registry.sh` | Creates `registry.db` with the sample data (SQLite only) |
 | `tests/` | Test suite |
 
 ## Design decisions

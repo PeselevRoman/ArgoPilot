@@ -35,3 +35,6 @@ docs/presentation/
 # Isolated worktrees and subagent scratch space
 .claude/worktrees/
 .superpowers/
+
+# Output of scripts/dev.sh and scripts/check.sh
+scripts/.logs/
