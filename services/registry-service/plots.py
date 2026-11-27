@@ -84,6 +84,16 @@ class Plot(BaseModel):
     lon: float
 
 
+# A dunam is 1000 square metres. Growers in the region measure plots in dunams.
+M2_PER_DUNAM = 1000
+
+
+class PlotArea(BaseModel):
+    plot_id: str
+    area_m2: float
+    area_dunam: float
+
+
 class PlotCreate(BaseModel):
     # Extra fields are ignored by default, as the judgment log records.
     farm_id: str
@@ -218,6 +228,12 @@ def list_plots(conn: Conn, farm_id: str | None = None) -> list[Plot]:
 @router.get("/plots/{plot_id}")
 def get_plot(plot_id: str, conn: Conn) -> Plot:
     return get_plot_or_404(conn, plot_id)
+
+
+@router.get("/plots/{plot_id}/area")
+def get_plot_area(plot_id: str, conn: Conn) -> PlotArea:
+    plot = get_plot_or_404(conn, plot_id)
+    return PlotArea(plot_id=plot.id, area_m2=plot.area_m2, area_dunam=plot.area_m2 / M2_PER_DUNAM)
 
 
 @router.patch("/plots/{plot_id}")
