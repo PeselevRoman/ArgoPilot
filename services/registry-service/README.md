@@ -119,6 +119,7 @@ A number can be sent as a string. `"1000"`, `"31.25"`, `"1e3"`, and `"1,234,567.
 | `POST` | `/v1/plots` | `201` | Body: all plot fields except `id` |
 | `GET` | `/v1/plots` | `200` | List, sorted by `id`. Optional `?farm_id=` filter. |
 | `GET` | `/v1/plots/{id}` | `200` | |
+| `GET` | `/v1/plots/{id}/area` | `200` | `{plot_id, area_m2, area_dunam}`. One dunam is 1000 m², so `area_dunam = area_m2 / 1000`, not rounded. |
 | `PATCH` | `/v1/plots/{id}` | `200` | Only the sent fields change. The whole plot is checked after the change, and nothing is saved if it is invalid. |
 | `DELETE` | `/v1/plots/{id}` | `204` | |
 | `GET` | `/v1/crops` | `200` | List, sorted by `id` |

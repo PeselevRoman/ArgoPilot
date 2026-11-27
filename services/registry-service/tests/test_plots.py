@@ -529,3 +529,39 @@ def test_body_farm_uuid_refuses_a_malformed_farm_id():
 
     assert caught.value.status_code == 422
     assert caught.value.detail == "Unknown farm"
+
+
+@pytest.mark.parametrize(
+    "area_m2, area_dunam",
+    [(1000, 1.0), (800, 0.8), (1500, 1.5), (400, 0.4), (1234.5, 1.2345)],
+)
+def test_area_converts_square_metres_to_dunams(test_db, area_m2, area_dunam):
+    plot = create_plot(new_farm(), area_m2=area_m2)
+
+    response = client.get(f"/v1/plots/{plot['id']}/area")
+
+    assert response.status_code == 200
+    assert response.json() == {"plot_id": plot["id"], "area_m2": area_m2, "area_dunam": area_dunam}
+
+
+def test_area_follows_a_patched_area(test_db):
+    plot = create_plot(new_farm())
+    client.patch(f"/v1/plots/{plot['id']}", json={"area_m2": 2500})
+
+    assert client.get(f"/v1/plots/{plot['id']}/area").json()["area_dunam"] == 2.5
+
+
+def test_area_unknown_id_returns_404_not_found(test_db):
+    response = client.get(f"/v1/plots/{uuid.uuid4()}/area")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "NOT_FOUND"
+
+
+def test_area_malformed_id_returns_404_not_found(test_db):
+    response = client.get("/v1/plots/garbage/area")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == "NOT_FOUND"
